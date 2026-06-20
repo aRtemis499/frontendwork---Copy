@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Bullion Algo System</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dashBg: '#09090b',
+                        cardBg: '#121214',
+                        brandGold: '#EAA83A',
+                        brandGreen: '#25C06D',
+                        brandRed: '#E54B4B',
+                        brandMuted: '#7D7D82'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: #09090b;
+        }
+        /* Chart area grid alignment */
+        .chart-grid-mesh {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        }
+        /* Custom neon center glow for the main asset metric chart */
+        .radial-chart-glow {
+            background: radial-gradient(circle, rgba(37, 192, 109, 0.12) 0%, rgba(0,0,0,0) 70%);
+        }
+    </style>
+</head>
+<!-- Load Screen -->
+<div id="loadScreen" class="fixed inset-0 z-[999] bg-[#050505] flex items-center justify-center">
+    <img 
+        id="loadLogo" 
+        src="assets/logo-colored.svg" 
+        alt="Bullion Algo" 
+        class="w-16 h-16 object-contain"
+        style="opacity: 0; transition: opacity 0.6s ease;"
+    >
+</div>
+<body class="text-white antialiased min-h-screen p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            
+            <div class="mt-6 pt-3">
+                <h1 id="welcome-name" class="text-2xl font-bold tracking-tight">Welcome!</h1>
+                <p class="text-xs text-brandMuted">Here's an overview of trades across the system</p>
+            </div>
+            
+            <div class="mb-5 pb-5 flex items-center gap-4 self-end sm:self-auto">
+                <button class="text-zinc-400 hover:text-white transition"><i data-lucide="sun-brigth" class="w-4 h-4"></i><img class="w-5" src="assets/brightness.svg" alt=""></button>
+
+                <!-- DROPDOWN WRAPPER -->
+                <div class="relative inline-block text-left">
+                    <a id="broker-btn" href="https://one.exnessonelink.com/a/v630hqc0" target="_blank" style="display:block" onclick="brokerAccountClicked()">
+                        <button class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs w-30 px-3 py-1 rounded-full transition block text-center shadow-lg shadow-brandGold/10 cursor-pointer select-none">
+                            Create Broker Account
+                        </button>
+                    </a>
+                    <button id="connect-bot-btn"
+                            onclick="toggleMT5Dropdown(event)"
+                            style="display: none;"
+                            class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs w-30 px-3 py-1 rounded-full transition block text-center shadow-lg shadow-brandGold/10 cursor-pointer select-none">
+                        Connect bot
+                    </button>
+                    <span id="connected-badge" style="display:none" class="flex items-center gap-1.5 text-[11px] font-semibold text-brandGreen bg-brandGreen/10 border border-brandGreen/30 px-2.5 py-1 rounded-full">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brandGreen"></span> Connected
+                    </span>
+                    
+                    <div id="mt5-dropdown-section" 
+                        class="hidden absolute right-0 mt-2 w-full min-w-[320px] sm:min-w-[360px] z-50 origin-top-right transition-all">
+                        
+                        <div class="w-full bg-black rounded-2xl p-7 shadow-2xl border border-white/[0.02]" onclick="event.stopPropagation()">
+                            
+                            <h2 class="text-center text-lg font-bold tracking-tight text-white mb-6">
+                                Enter MT5 Credentials
+                            </h2>
+
+                            <form id="mt5Form" class="space-y-4">
+                                
+                                <div class="flex flex-col gap-1.5 text-left">
+                                    <label class="text-sm font-medium text-zinc-300 px-1">Server</label>
+                                    <input id="mt5Server" type="text" placeholder="Server" 
+                                        class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-400 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
+                                </div>
+
+                                <div class="flex flex-col gap-1.5 text-left">
+                                    <label class="text-sm font-medium text-zinc-300 px-1">Login</label>
+                                    <input id="mt5Login" type="text" placeholder="Login" 
+                                        class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-400 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
+                                </div>
+
+                                <div class="flex flex-col gap-1.5 text-left">
+                                    <label class="text-sm font-medium text-zinc-300 px-1">Investor Password</label>
+                                    <input id="mt5InvestorPassword" type="password" placeholder="Investor Password" 
+                                        class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-400 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
+                                </div>
+
+                                <div class="pt-3">
+                                    <button type="submit" 
+                                            class="w-full bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-sm py-2 rounded-full transition-colors duration-200 shadow-md transform active:scale-[0.99]">
+                                        Connect Bot
+                                    </button>
+                                </div>
+
+                            </form>
+
+                        </div>
+                    </div>
+
+                </div>
+                <a id="admin-link" href="http://localhost:3000/admindashboard.html" style="display:none" class="text-[11px] font-medium text-brandGold flex items-center gap-1.5 transition ml-2">
+                 <i data-lucide="shield" class="w-3.5 h-3.5"></i> Admin
+                </a>
+                <button onclick="document.getElementById('logout-modal').showModal()" 
+                        class="text-[11px] font-medium text-brandRed/80 hover:text-brandRed flex items-center gap-1.5 transition ml-2 cursor-pointer">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+                </button>
+                
+                <!-- Confirm logout modal -->
+                <dialog id="logout-modal" 
+                        class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-6 w-full max-w-[380px] shadow-2xl border border-white/5 open:flex flex-col items-center gap-6">
+                    
+                    <p class="text-sm font-medium tracking-wide text-center text-zinc-200 px-2">
+                        You are about to log out, kindly confirm
+                    </p>
+
+                    <div class="flex items-center justify-center gap-8 w-full px-4">
+                        
+                        <button onclick="document.getElementById('logout-modal').close()" 
+                                type="button"
+                                class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
+                            Back
+                        </button>
+
+                        <a href="http://localhost:3000/auth/logout" 
+                        class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
+                            Confirm
+                        </a>
+                        
+                    </div>
+                </dialog>
+
+                <!-- Connection status modal -->
+                <dialog id="connect-status-modal" 
+                        class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-3 shadow-2xl border border-white/5 open:flex items-center gap-2">
+                    <span id="connect-status-dot" class="w-2 h-2 rounded-full bg-zinc-500"></span>
+                    <span id="connect-status-text" class="text-xs font-medium">Checking status...</span>
+                    <button onclick="document.getElementById('connect-status-modal').close()" 
+                            class="ml-2 text-zinc-500 hover:text-white transition cursor-pointer text-xs">✕</button>
+                </dialog>
+            </div>
+        </header>
+
+        <!-- Overlay shown when MT5 is not connected -->
+        <div id="dashboard-overlay" style="display:none" class="flex flex-col items-center justify-center text-center gap-4 py-32">
+            <h2 class="text-lg font-bold text-white">Connect your trading account to get started</h2>
+            <p class="text-xs text-zinc-500 max-w-xs">Your dashboard will populate with live data once your MT5 account is connected.</p>
+            <button onclick="updateConnectStatusModal(); document.getElementById('connect-status-modal').showModal()"
+                class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs px-6 py-2 rounded-full transition shadow-lg shadow-brandGold/10 cursor-pointer">
+                Connect
+            </button>
+        </div>
+
+        <div id="dashboard-body" style="display:none">
+        <main class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        
+                <!-- The Chart Dashboard Chart -->
+                <div class="md:col-span-3 bg-cardBg border border-white/5 rounded-2xl p-6 flex flex-col justify-between min-h-[340px] relative overflow-hidden shadow-xl">
+                    
+                    <div class="pt-3 absolute inset-0 radial-chart-glow z-0 pointer-events-none">
+                        <img class="w-full h-full object-cover select-none" src="assets/chartcolorpng.png" alt="">
+                    </div>
+                    
+                    <div class="flex justify-between items-start relative z-40 w-full mb-2">
+                        <div>
+                            <span class="text-xs font-medium text-white">Total Asset Managed</span>
+                            <div id="total-asset" class="text-3xl font-bold tracking-tight mt-1">--</div>
+                        </div>
+                        
+                        <div class="relative inline-block text-left">
+                            <button id="dropdown-btn" 
+                                    type="button" 
+                                    class="bg-[#e89b02] hover:bg-[#ffb005] border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1.5 cursor-pointer transition-colors duration-200 select-none relative z-50">
+                                <span id="current-range-text" class="text-[11px] text-black font-semibold tracking-wide pointer-events-none">6 Months</span>
+                                <svg id="dropdown-chevron" 
+                                    class="w-3 h-3 text-black transition-transform duration-200 pointer-events-none" 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    viewBox="0 0 24 24" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    stroke-width="2.5" 
+                                    stroke-linecap="round" 
+                                    stroke-linejoin="round">
+                                    <path d="m6 9 6 6 6-6"/>
+                                </svg>
+                            </button>
+                            
+                            <div id="dropdown-menu" class="hidden absolute right-0 mt-1.5 min-w-[120px] w-max max-w-[200px] bg-[#1c1c1e] border border-white/5 rounded-xl shadow-2xl py-1 z-50 origin-top-right transition-all">
+                                
+                                <button type="button" data-view="7days" class="w-full text-left px-3 py-2 text-[11px] font-medium text-zinc-300 hover:bg-[#2c2c2e] hover:text-white transition-colors block whitespace-nowrap cursor-pointer">
+                                    7 Days
+                                </button>
+                                <button type="button" data-view="30days" class="w-full text-left px-3 py-2 text-[11px] font-medium text-zinc-300 hover:bg-[#2c2c2e] hover:text-white transition-colors block whitespace-nowrap cursor-pointer">
+                                    30 Days
+                                </button>
+                                <button type="button" data-view="6months" class="w-full text-left px-3 py-2 text-[11px] font-medium text-zinc-300 hover:bg-[#2c2c2e] hover:text-white transition-colors block whitespace-nowrap cursor-pointer">
+                                    6 Months
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="chart-data-view" class="h-44 w-full relative chart-grid-mesh mt-2 flex items-end relative z-10 pointer-events-none">
+                        <div id="chart-y-axis" class="absolute left-0 top-0 bottom-0 flex flex-col gap-6 text-[10px] font-bold text-zinc-300 pb-2">
+                            <div id="y-label-4">$250,000</div>
+                            <div id="y-label-3">$200,000</div>
+                            <div id="y-label-2">$150,000</div>
+                            <div id="y-label-1">$100,000</div>
+                            <div id="y-label-0">$50,000</div>
+                        </div>
+                        <div class="absolute top-[67px] left-[62%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20 pointer-events-auto">
+                            <div class="bg-brandGreen text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-lg mb-1 opacity-70">$150,000.00</div>
+                        </div>
+                    </div>
+
+                    <div id="chart-empty-view" style="display:none" class="h-44 w-full flex flex-col items-center justify-center gap-3 relative z-10">
+                        <div style="width:80px;height:80px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                            <!-- 🖼️ DROP ILLUSTRATION HERE: chart-empty.png -->
+                            <img id="chart-empty-img" src="assets/chart-empty.png" class="w-12 h-12 opacity-70" alt="No data" onerror="this.style.display='none'">
+                        </div>
+                        <span class="text-xs text-zinc-500">No data available</span>
+                    </div>
+
+                    <div id="chart-labels" class="flex justify-between items-center text-[11px] font-bold text-zinc-300 px-10 relative z-20 mt-2">
+                        <span>Jan</span>
+                        <span>Feb</span>
+                        <span>Mar</span>
+                        <span>Apr</span>
+                        <span>May</span>
+                        <span>June</span>
+                    </div>
+                </div>
+
+                <!-- 3. Sidebar remains md:col-span-1 automatically -->
+                <div class="md:col-span-1 flex flex-col gap-4">
+                    <div class="relative bg-cardBg border border-white/5 rounded-2xl p-5 flex flex-col gap-8 h-[162px] shadow-lg">
+                        <div class="w-[80px] text-brand">
+                            <img class="w-5" src="assets/profitcard.svg" alt="">
+                            <span class="text-xs font-medium inline-block">Total Profit</span>
+                        </div>
+                        <div class="my-auto w-full h-[100%]">
+                            <div id="total-profit" class="text-2xl font-bold tracking-tight text-brandGold">--</div>
+                            <span class="text-[10px] font-bold text-brandGreen flex items-center gap-0.5 mt-0.5">
+                                 +2%
+                            </span>
+                            <div class="absolute right-0 bottom-[5%]">
+                                <img class="w-[110px]" src="assets/totalprofit.png" alt="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-cardBg border border-white/5 rounded-2xl p-2 h-[162px] shadow-lg">
+                        <div class="space-y-2 flex flex-col justify-center gap-8 mt-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-brandGold/20 flex items-center justify-center border border-brandGold/30">
+                                    <img src="assets/assercard.svg" alt="">
+                                </div>
+                                <span class="text-xs font-semibold tracking-wider text-zinc-300 font-mono">XAUUSD</span>
+                            </div>
+                            <div id="xauusd-price" class="text-3xl font-black tracking-tight pt-1">--</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-cardBg border border-white/5 rounded-2xl flex justify-between items-end h-32 shadow-md">
+                <div class="pr-2 pt-2 relative">
+                    <div class="absolute bottom-[79px] left-[8px] text-md text-brand font-medium "><div class=" "><img class="w-5 h-5  mr-2 mt-2" src="assets/totaltradescard.svg" alt=""></div> Total Trades</div>
+                    <div class=" h-auto mr-[50px] p-0 rounded-2xl opacity-65">
+                        <img class="p-0 rounded-bl-2xl" src="assets/totaltrades.png" alt="">
+                    </div>
+                </div>
+                <div id="total-trades" class="px-2 py-1 text-3xl font-bold tracking-tight">--</div>
+            </div>
+
+            <div class="bg-cardBg relative border border-white/5 rounded-2xl px-3 pb-5 flex  items-end h-32 shadow-md">
+                <div class="flex flex-col justify-start gap-7">
+                    <div class="text-md mt-2 text-brand font-medium block"><img class="w-5" src="assets/floatingpnlcard.svg" alt=""> Floating PnL</div>
+                    <div class="w-[150px] h-8 w-20">
+                        <img src="assets/floatingpnl.png" alt="">
+                        
+                    </div>
+                </div>
+                <div id="floating-pnl" class="absolute left-[104px] text-2xl font-bold tracking-tight text-brandGold z-1">--</div>
+            </div>
+
+            <div class="relative bg-cardBg border border-white/5 rounded-2xl pt-2 pr-5 pb-3 flex justify-between h-32 shadow-md">
+                <div class=" ">
+                    <div class="ml-3 text-md text-brandk"> <span class="block"><img class="w-5 h-5 inline mr-1" src="assets/halftrophy.svg" alt=""></span> <span class="block">Win Rate</span> </div>
+                    <img class="w-[90px] absolute bottom-0" src="assets/wintrophy.png" alt="">
+                </div>
+                <div id="win-rate" class="text-3xl mt-[65px] font-bold tracking-tight">--</div>
+            </div>
+        </section>
+        
+        <!-- Open Positions Section Elements List Table Layout Box -->
+        <div class="space-y-3">
+            <h2 class="text-base font-bold text-white tracking-tight px-1">Open Positions</h2>
+            <div id="positions-data-view" class="p-2 overflow-x-auto shadow-xl">
+                <table class="w-full text-left border-separate border-spacing-y-3">
+                    <thead>
+                        <tr class="text-[11px] uppercase tracking-wider text-zinc-200">
+                            <th class="pb-2 px-4 font-medium">Entry Price</th>
+                            <th class="pb-2 px-4 font-medium">Current Price</th>
+                            <th class="pb-2 px-4 font-medium">Direction</th>
+                            <th class="pb-2 px-4 font-medium">Lot size</th>
+                            <th class="pb-2 px-4 font-medium text-right">Floating PNL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-tbody" class="text-sm font-mono text-zinc-200">
+                        
+                        <tr class="bg-[#121214] border border-white/5 rounded-full hover:bg-zinc-900/50 transition relative isolate">
+                            <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">4300.35</td>
+                            <td class="px-4 py-2 border-y border-white/5">4343.20</td>
+                            <td class="px-4 py-2 border-y border-white/5 font-semibold">Buy</td>
+                            <td class="px-4 py-2 border-y border-white/5">0.5</td>
+                            <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right text-brandGold font-bold">$249.30</td>
+                        </tr>
+
+                        <tr class="bg-[#121214] border border-white/5 rounded-full hover:bg-zinc-900/50 transition relative isolate">
+                            <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">4300.35</td>
+                            <td class="px-4 py-2 border-y border-white/5">4343.20</td>
+                            <td class="px-4 py-2 border-y border-white/5 font-semibold">Buy</td>
+                            <td class="px-4 py-2 border-y border-white/5">0.5</td>
+                            <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right text-brandGold font-bold">$249.30</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="positions-empty-view" style="display:none" class="flex flex-col items-center justify-center gap-3 py-10">
+                <div style="width:64px;height:64px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <!-- 🖼️ DROP ILLUSTRATION HERE: positions-empty.png -->
+                    <img id="positions-empty-img" src="assets/position-empty.png" class="w-10 h-10 opacity-70" alt="No data" onerror="this.style.display='none'">
+                </div>
+                <span class="text-xs text-zinc-500">No data available</span>
+            </div>
+        </div>
+
+        <!-- Trade History List Section Table Layout Box Component -->
+        <div class="space-y-3">
+            <h2 class="text-base font-bold text-white tracking-tight px-1">Trade History</h2>
+            <div id="history-data-view" class="p-2 overflow-x-auto shadow-xl">
+                
+                <table class="w-full text-left border-separate border-spacing-y-3">
+                    <thead>
+                        <tr class="text-[11px] uppercase tracking-wider text-zinc-200">
+                            <th class="pb-2 px-4 font-medium">Entry Price</th>
+                            <th class="pb-2 px-4 font-medium">Current Price</th>
+                            <th class="pb-2 px-4 font-medium">Direction</th>
+                            <th class="pb-2 px-4 font-medium">Lot size</th>
+                            <th class="pb-2 px-4 font-medium text-right">Floating PNL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody" class="text-sm font-mono text-zinc-200">
+                        
+                        <tr class="bg-[#121214] border border-white/5 rounded-full hover:bg-zinc-900/50 transition relative isolate">
+                            <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">4300.35</td>
+                            <td class="px-4 py-2 border-y border-white/5">4343.20</td>
+                            <td class="px-4 py-2 border-y border-white/5 font-semibold">Buy</td>
+                            <td class="px-4 py-2 border-y border-white/5">0.5</td>
+                            <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right text-brandGold font-bold">$249.30</td>
+                        </tr>
+
+                        <tr class="bg-[#121214] border border-white/5 rounded-full hover:bg-zinc-900/50 transition relative isolate">
+                            <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">4300.35</td>
+                            <td class="px-4 py-2 border-y border-white/5">4343.20</td>
+                            <td class="px-4 py-2 border-y border-white/5 font-semibold">Buy</td>
+                            <td class="px-4 py-2 border-y border-white/5">0.5</td>
+                            <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right text-brandRed font-bold">$249.30</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="history-empty-view" style="display:none" class="flex flex-col items-center justify-center gap-3 py-10">
+                <div style="width:64px;height:64px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <!-- 🖼️ DROP ILLUSTRATION HERE: history-empty.png -->
+                    <img id="history-empty-img" src="assets/position-empty.png" class="w-10 h-10 opacity-70" alt="No data" onerror="this.style.display='none'">
+                </div>
+                <span class="text-xs text-zinc-500">No data available</span>
+            </div>
+        </div>
+
+        <!-- Full PnL Calendar Section Architecture System -->
+        <div class="space-y-6 pt-4 max-w-4xl mx-auto px-4">
+            <div class="flex items-center justify-center gap-6">
+                <button class="text-zinc-500 hover:text-white transition">
+                    <i data-lucide="chevron-left" lucide-name="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <h3 class="text-lg font-bold tracking-tight text-white">February</h3>
+                <button class="text-zinc-500 hover:text-white transition">
+                    <i data-lucide="chevron-right" lucide-name="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-7 gap-5 text-center text-xs text-zinc-400 font-medium px-1">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thur</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-5 text-xs">
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">28</div>
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">29</div>
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">30</div>
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">31</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">1</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">2</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">3</div>
+
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">4</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">5</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">6</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold flex flex-col justify-between">
+                    <span>7</span>
+                    <span class="calendar-pnl text-[11px] text-brandGold font-bold mt-2" data-day="7">$54.5</span>
+                </div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold flex flex-col justify-between">
+                    <span>8</span>
+                    <span class="calendar-pnl text-[11px] text-brandGold font-bold mt-2" data-day="8">$200.4</span>
+                </div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold flex flex-col justify-between">
+                    <span>9</span>
+                    <span class="calendar-pnl text-[11px] text-brandRed font-bold mt-2" data-day="9">$-10.5</span>
+                </div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold flex flex-col justify-between">
+                    <span>10</span>
+                    <span class="calendar-pnl text-[11px] text-brandGold font-bold mt-2" data-day="10">$700.3</span>
+                </div>
+
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold flex flex-col justify-between">
+                    <span>11</span>
+                    <span class="calendar-pnl text-[11px] text-brandGold font-bold mt-2" data-day="11">$1000.8</span>
+                </div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">12</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">13</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">14</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">15</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">16</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">17</div>
+
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">18</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">19</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">20</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">21</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">22</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">23</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">24</div>
+
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">25</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">26</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">27</div>
+                <div class="bg-zinc-900/60 border border-white/5 rounded-xl p-4 min-h-[72px] text-zinc-300 font-bold">28</div>
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">1</div>
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">2</div>
+                <div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-4 min-h-[72px] text-zinc-600 font-bold">3</div>
+            </div>
+        </div>
+        </div><!-- end dashboard-body -->
+
+        <footer class="mt-16 text-center text-[10px] text-zinc-600 border-t border-white/5 py-6">
+            <p>© 2026 Bullion Algo System. All Rights Reserved.</p>
+        </footer>
+    </div>
+    
+
+
+    <script>
+        lucide.createIcons();
+    </script>
+
+    <!-- 6 Months chart Switch JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('dropdown-btn');
+            const menu = document.getElementById('dropdown-menu');
+            const chevron = document.getElementById('dropdown-chevron');
+            const rangeText = document.getElementById('current-range-text');
+            const labelsContainer = document.getElementById('chart-labels');
+
+            const labelPresets = {
+                '7days': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                '30days': ['1', '5', '10', '15', '20', '25', '30'],
+                '6months': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June']
+            };
+
+            const textPresets = {
+                '7days': '7 Days',
+                '30days': '30 Days',
+                '6months': '6 Months'
+            };
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+                chevron.classList.toggle('rotate-180');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !menu.contains(e.target)) {
+                    menu.classList.add('hidden');
+                    chevron.classList.remove('rotate-180');
+                }
+            });
+
+            document.querySelectorAll('#dropdown-menu button[data-view]').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const view = e.currentTarget.getAttribute('data-view').toLowerCase();
+                    
+                    if (textPresets[view]) {
+                        rangeText.textContent = textPresets[view];
+                        labelsContainer.innerHTML = labelPresets[view].map(label => `<span>${label}</span>`).join('');
+                    }
+                    
+                    menu.classList.add('hidden');
+                    chevron.classList.remove('rotate-180');
+                });
+            });
+        });
+    </script>
+
+    <script>
+    function toggleMT5Dropdown(event) {
+        event.stopPropagation();
+        const dropSection = document.getElementById('mt5-dropdown-section');
+        dropSection.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+        const dropSection = document.getElementById('mt5-dropdown-section');
+        const triggerBtn = document.getElementById('connect-bot-btn');
+        
+        if (dropSection && !dropSection.classList.contains('hidden')) {
+            if (!dropSection.contains(e.target) && !triggerBtn.contains(e.target)) {
+                dropSection.classList.add('hidden');
+            }
+        }
+    });
+    </script>
+
+    <script>
+        const loadScreen = document.getElementById('loadScreen');
+        const loadLogo = document.getElementById('loadLogo');
+
+        setTimeout(() => {
+            loadLogo.style.opacity = '1';
+        }, 100);
+
+        setTimeout(() => {
+            loadLogo.style.opacity = '0';
+        }, 1200);
+
+        setTimeout(() => {
+            loadScreen.style.transition = 'opacity 0.5s ease';
+            loadScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadScreen.style.display = 'none';
+            }, 500);
+        }, 1500);
+    </script>
+
+    <script>
+    function updateChartScale(balance) {
+        let max;
+        if (balance <= 0) {
+            max = 1000;
+        } else {
+            const magnitude = Math.pow(10, Math.floor(Math.log10(balance)));
+            max = Math.ceil(balance / magnitude) * magnitude;
+            if (max <= balance) max += magnitude;
+        }
+
+        const step = max / 5;
+
+        document.getElementById('y-label-4').textContent = `$${Math.round(max).toLocaleString()}`;
+        document.getElementById('y-label-3').textContent = `$${Math.round(step * 4).toLocaleString()}`;
+        document.getElementById('y-label-2').textContent = `$${Math.round(step * 3).toLocaleString()}`;
+        document.getElementById('y-label-1').textContent = `$${Math.round(step * 2).toLocaleString()}`;
+        document.getElementById('y-label-0').textContent = `$${Math.round(step).toLocaleString()}`;
+    }
+
+    function updateConnectStatusModal() {
+        const dot = document.getElementById('connect-status-dot');
+        const text = document.getElementById('connect-status-text');
+        const status = window._mt5Status || 'disconnected';
+
+        if (status === 'connected') {
+            dot.className = 'w-2 h-2 rounded-full bg-brandGreen';
+            text.textContent = 'Connected';
+        } else if (status === 'pending') {
+            dot.className = 'w-2 h-2 rounded-full bg-brandGold';
+            text.textContent = 'Pending';
+        } else {
+            dot.className = 'w-2 h-2 rounded-full bg-brandRed';
+            text.textContent = 'Disconnected';
+        }
+    }
+
+    function renderPositions(positions) {
+        const tbody = document.getElementById('positions-tbody');
+        if (!positions || positions.length === 0) {
+            document.getElementById('positions-data-view').style.display = 'none';
+            document.getElementById('positions-empty-view').style.display = 'flex';
+            return;
+        }
+        document.getElementById('positions-data-view').style.display = 'block';
+        document.getElementById('positions-empty-view').style.display = 'none';
+        tbody.innerHTML = positions.map(p => `
+            <tr class="bg-[#121214] border border-white/5 rounded-full hover:bg-zinc-900/50 transition relative isolate">
+                <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">${p.openPrice}</td>
+                <td class="px-4 py-2 border-y border-white/5">${p.currentPrice}</td>
+                <td class="px-4 py-2 border-y border-white/5 font-semibold">${p.type === 'POSITION_TYPE_BUY' ? 'Buy' : 'Sell'}</td>
+                <td class="px-4 py-2 border-y border-white/5">${p.volume}</td>
+                <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right ${p.profit >= 0 ? 'text-brandGold' : 'text-brandRed'} font-bold">$${p.profit.toFixed(2)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderCalendarPnl(history) {
+        // Group closed trades by date, sum profit per day
+        const dailyPnl = {};
+        (history || []).forEach(order => {
+            if (!order.doneTime || order.profit === undefined) return;
+            const day = new Date(order.doneTime).getDate();
+            dailyPnl[day] = (dailyPnl[day] || 0) + order.profit;
+        });
+
+        document.querySelectorAll('.calendar-pnl').forEach(el => {
+            const day = parseInt(el.getAttribute('data-day'));
+            if (dailyPnl[day] !== undefined) {
+                const value = dailyPnl[day];
+                el.textContent = `$${value.toFixed(2)}`;
+                el.className = `calendar-pnl text-[11px] font-bold mt-2 ${value >= 0 ? 'text-brandGold' : 'text-brandRed'}`;
+                el.style.display = 'inline';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    async function loadDashboard() {
+        try {
+            const res = await fetch('http://localhost:3000/auth/me', {
+                credentials: 'include'
+            });
+            const data = await res.json();
+
+            if (!data.loggedIn) {
+                console.log('Not logged in:', data);
+                window.location.href = 'http://localhost:3000/index.html';
+                return;
+            }
+
+            document.getElementById('welcome-name').textContent = `Welcome ${data.user.name}!`;
+            window._currentUserId = data.user.id;
+
+            if (data.user.role === 'admin') {
+                document.getElementById('admin-link').style.display = 'flex';
+            }
+
+            const mt5Res = await fetch('http://localhost:3000/mt5/status', {
+                credentials: 'include'
+            });
+            const mt5Data = await mt5Res.json();
+
+            const connectBotBtn = document.getElementById('connect-bot-btn');
+            const brokerBtn = document.getElementById('broker-btn');
+            const connectedBadge = document.getElementById('connected-badge');
+
+            const brokerClicked = localStorage.getItem(`broker_clicked_${data.user.id}`);
+
+            // Header buttons stay as-is, untouched logic
+            if (mt5Data.account) {
+                connectBotBtn.style.display = 'none';
+                brokerBtn.style.display = 'none';
+            } else if (brokerClicked) {
+                connectBotBtn.style.display = 'block';
+                brokerBtn.style.display = 'none';
+            } else {
+                connectBotBtn.style.display = 'none';
+                brokerBtn.style.display = 'block';
+            }
+
+            // Track status globally so the status modal can read it
+            window._mt5Status = mt5Data.account ? mt5Data.account.status : 'disconnected';
+
+            // Connected badge only shows when status is exactly 'connected'
+            if (mt5Data.account && mt5Data.account.status === 'connected') {
+                connectedBadge.style.display = 'flex';
+            } else {
+                connectedBadge.style.display = 'none';
+            }
+
+            // Overlay vs full dashboard
+            if (!mt5Data.account || mt5Data.account.status !== 'connected') {
+                document.getElementById('dashboard-overlay').style.display = 'flex';
+                document.getElementById('dashboard-body').style.display = 'none';
+            } else {
+                document.getElementById('dashboard-overlay').style.display = 'none';
+                document.getElementById('dashboard-body').style.display = 'block';
+
+                updateChartScale(0);
+
+                // Fetch live MetaApi data
+                const liveRes = await fetch('http://localhost:3000/mt5/live-data', { credentials: 'include' });
+                const liveData = await liveRes.json();
+
+                if (liveData.connected) {
+                    updateChartScale(liveData.balance);
+                    document.getElementById('total-asset').textContent = `$${liveData.balance.toLocaleString()}`;
+                    document.getElementById('total-profit').textContent = `$${liveData.profit.toLocaleString()}`;
+                    document.getElementById('total-trades').textContent = liveData.history.length;
+                    document.getElementById('floating-pnl').textContent = `$${(liveData.equity - liveData.balance).toLocaleString()}`;
+
+                    renderPositions(liveData.positions);
+                    renderCalendarPnl(liveData.history);
+
+                    document.getElementById('chart-data-view').style.display = 'flex';
+                    document.getElementById('chart-empty-view').style.display = 'none';
+                    document.getElementById('history-data-view').style.display = 'block';
+                    document.getElementById('history-empty-view').style.display = 'none';
+                } else {
+                    document.getElementById('chart-data-view').style.display = 'none';
+                    document.getElementById('chart-empty-view').style.display = 'flex';
+                    document.getElementById('positions-data-view').style.display = 'none';
+                    document.getElementById('positions-empty-view').style.display = 'flex';
+                    document.getElementById('history-data-view').style.display = 'none';
+                    document.getElementById('history-empty-view').style.display = 'flex';
+                    document.querySelectorAll('.calendar-pnl').forEach(el => el.style.display = 'none');
+                }
+            }
+
+        } catch (err) {
+            console.error('Dashboard load error:', err);
+        }
+    }
+
+    loadDashboard();
+    </script>
+
+    <script>
+    document.getElementById('mt5Form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const server = document.getElementById('mt5Server').value;
+        const account_number = document.getElementById('mt5Login').value;
+        const investor_password = document.getElementById('mt5InvestorPassword').value;
+
+        try {
+            const res = await fetch('http://localhost:3000/mt5/connect', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ server, account_number, investor_password })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                alert('MT5 account submitted successfully! We will connect it shortly.');
+                localStorage.removeItem(`broker_clicked_${window._currentUserId}`);
+                document.getElementById('mt5-dropdown-section').classList.add('hidden');
+                loadDashboard();
+            } else {
+                alert(data.error || 'Something went wrong.');
+            }
+        } catch (err) {
+            alert('Could not connect to server.');
+        }
+    });
+    </script>
+
+    <script>
+    function brokerAccountClicked() {
+        const userId = window._currentUserId;
+        if (userId) {
+            localStorage.setItem(`broker_clicked_${userId}`, 'true');
+        }
+        setTimeout(() => {
+            document.getElementById('broker-btn').style.display = 'none';
+            document.getElementById('connect-bot-btn').style.display = 'block';
+        }, 500);
+    }
+    </script>
+
+</body>
+</html>

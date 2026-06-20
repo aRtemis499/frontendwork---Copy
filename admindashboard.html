@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Bullion Algo System</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dashBg: '#09090b',
+                        cardBg: '#121214',
+                        brandGold: '#EAA83A',
+                        brandGreen: '#25C06D',
+                        brandRed: '#E54B4B',
+                        brandMuted: '#7D7D82'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: #09090b;
+        }
+        .chart-grid-mesh {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        }
+        .radial-chart-glow {
+            background: radial-gradient(circle, rgba(37, 192, 109, 0.12) 0%, rgba(0,0,0,0) 70%);
+        }
+        dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="text-white antialiased min-h-screen p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            
+            <div class="mt-6 pt-3">
+                <p class="text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">admin dashboard</p>
+                <h1 id="admin-name" class="text-2xl font-bold tracking-tight">Welcome!</h1>
+                <p class="text-xs text-brandMuted">Here's an overview of trades across the system</p>
+            </div>
+            
+            <div class="mb-5 pb-5 flex items-center gap-4 self-end sm:self-auto">
+                <button class="text-zinc-400 hover:text-white transition"><i data-lucide="sun-brigth" class="w-4 h-4"></i><img class="w-5" src="assets/brightness.svg" alt=""></button>
+                
+                <!-- The Invite Button -->
+                <div class="relative inline-block text-left">
+                    <button onclick="toggleInviteDropdown(event)" 
+                            type="button" 
+                            class="flex items-center gap-2 bg-cardBg/60 border border-white/5 py-1.5 px-3 rounded-full hover:bg-white/5 transition-colors duration-200 cursor-pointer select-none">
+                        <div id="invite-btn-avatars" class="flex -space-x-1.5 pointer-events-none"></div>
+                        <span class="text-[12px] text-zinc-300 font-medium pointer-events-none">+ Invite</span>
+                    </button>
+                    
+                    <div id="invite-dropdown-menu" 
+                        class="hidden absolute right-0 mt-2 w-[420px] max-w-sm sm:max-w-md bg-[#121214] border border-white/5 rounded-2xl p-4 shadow-2xl z-50 origin-top-right transition-all">
+                        
+                        <div class="flex items-center gap-2 mb-4 w-full">
+                            <div class="relative flex-1">
+                                <input type="email" 
+                                    id="invite-email-input"
+                                    placeholder="Enter email address" 
+                                    class="w-full bg-[#1c1c1e] text-zinc-100 text-[13px] placeholder-zinc-600 border border-white/5 rounded-xl px-3.5 py-2 focus:outline-none focus:border-brandGold/30 transition-colors">
+                            </div>
+                            <button type="button" 
+                                    onclick="sendInvite()"
+                                    class="bg-[#e89b02] hover:bg-[#ffb005] text-black font-semibold text-[13px] px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer">
+                                Invite
+                            </button>
+                        </div>
+
+                        <p id="invite-message" class="text-[11px] mb-3 hidden"></p>
+                        <div id="admins-list" class="space-y-3">
+                            <p class="text-[11px] text-zinc-500">Loading admins...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logout btn -->
+                <button onclick="document.getElementById('logout-modal').showModal()" 
+                        class="text-[11px] font-medium text-brandRed/80 hover:text-brandRed flex items-center gap-1.5 transition ml-2 cursor-pointer">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+                </button>
+
+                <!-- Confirm logout modal -->
+                <dialog id="logout-modal" 
+                        class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-6 w-full max-w-[380px] shadow-2xl border border-white/5 open:flex flex-col items-center gap-6">
+                    <p class="text-sm font-medium tracking-wide text-center text-zinc-200 px-2">
+                        You are about to log out, kindly confirm
+                    </p>
+                    <div class="flex items-center justify-center gap-8 w-full px-4">
+                        <button onclick="document.getElementById('logout-modal').close()" 
+                                type="button"
+                                class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
+                            Back
+                        </button>
+                        <a href="http://localhost:3000/auth/logout" 
+                           class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
+                            Confirm
+                        </a>
+                    </div>
+                </dialog>
+
+                <!-- Status update modal -->
+                <dialog id="status-modal"
+                        class="backdrop:bg-black/60 bg-[#121214] text-white rounded-2xl p-6 w-full max-w-[340px] shadow-2xl border border-white/5 open:flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold">Update Account Status</h3>
+                        <button onclick="document.getElementById('status-modal').close()" class="text-zinc-500 hover:text-white text-xs cursor-pointer">✕</button>
+                    </div>
+                    <p id="status-modal-user" class="text-xs text-zinc-400"></p>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="updateStatus('connected')"
+                                class="w-full bg-brandGreen/10 hover:bg-brandGreen/20 border border-brandGreen/30 text-brandGreen font-semibold text-xs py-2 rounded-full transition cursor-pointer">
+                            ✓ Mark as Connected
+                        </button>
+                        <button onclick="updateStatus('pending')"
+                                class="w-full bg-brandGold/10 hover:bg-brandGold/20 border border-brandGold/30 text-brandGold font-semibold text-xs py-2 rounded-full transition cursor-pointer">
+                            ⏳ Mark as Pending
+                        </button>
+                        <button onclick="updateStatus('rejected')"
+                                class="w-full bg-brandRed/10 hover:bg-brandRed/20 border border-brandRed/30 text-brandRed font-semibold text-xs py-2 rounded-full transition cursor-pointer">
+                            ✕ Mark as Rejected
+                        </button>
+                    </div>
+                </dialog>
+            </div>
+        </header>
+            
+        <main class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+            <div class="md:col-span-3 bg-cardBg border border-white/5 rounded-2xl p-6 flex flex-col justify-between min-h-[340px] relative overflow-hidden shadow-xl">
+                <div class="pt-3 absolute inset-0 radial-chart-glow z-0 pointer-events-none">
+                    <img class="w-full h-full object-cover select-none" src="assets/chartcolorpng.png" alt="">
+                </div>
+                
+                <div class="flex justify-between items-start relative z-40 w-full mb-2">
+                    <div>
+                        <span class="text-xs font-medium text-white">Total Asset Managed</span>
+                        <div class="text-3xl font-bold tracking-tight mt-1">$150,000</div>
+                    </div>
+                    
+                    <div class="relative inline-block text-left">
+                        <button id="dropdown-btn" type="button" 
+                                class="bg-[#e89b02] hover:bg-[#ffb005] border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1.5 cursor-pointer transition-colors duration-200 select-none relative z-50">
+                            <span id="current-range-text" class="text-[11px] text-black font-semibold tracking-wide pointer-events-none">6 Months</span>
+                            <svg id="dropdown-chevron" class="w-3 h-3 text-black transition-transform duration-200 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </button>
+                        
+                        <div id="dropdown-menu" class="hidden absolute right-0 mt-1.5 min-w-[120px] w-max max-w-[200px] bg-[#1c1c1e] border border-white/5 rounded-xl shadow-2xl py-1 z-50 origin-top-right transition-all">
+                            <button type="button" data-view="7days" class="w-full text-left px-3 py-2 text-[11px] font-medium text-zinc-300 hover:bg-[#2c2c2e] hover:text-white transition-colors block whitespace-nowrap cursor-pointer">7 Days</button>
+                            <button type="button" data-view="30days" class="w-full text-left px-3 py-2 text-[11px] font-medium text-zinc-300 hover:bg-[#2c2c2e] hover:text-white transition-colors block whitespace-nowrap cursor-pointer">30 Days</button>
+                            <button type="button" data-view="6months" class="w-full text-left px-3 py-2 text-[11px] font-medium text-zinc-300 hover:bg-[#2c2c2e] hover:text-white transition-colors block whitespace-nowrap cursor-pointer">6 Months</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-44 w-full relative chart-grid-mesh mt-2 flex items-end relative z-10 pointer-events-none">
+                    <div class="absolute left-0 top-0 bottom-0 flex flex-col gap-6 text-[10px] font-bold text-zinc-300 pb-2">
+                        <div>$250,000</div>
+                        <div>$200,000</div>
+                        <div>$150,000</div>
+                        <div>$100,000</div>
+                        <div>$50,000</div>
+                    </div>
+                    <div class="absolute top-[67px] left-[62%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20 pointer-events-auto">
+                        <div class="bg-brandGreen text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-lg mb-1 opacity-70">$150,000.00</div>
+                    </div>
+                </div>
+
+                <div id="chart-labels" class="flex justify-between items-center text-[11px] font-bold text-zinc-300 px-10 relative z-20 mt-2">
+                    <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>June</span>
+                </div>
+            </div>
+
+            <div class="md:col-span-1 flex flex-col gap-4">
+                <div class="relative bg-cardBg border border-white/5 rounded-2xl p-5 flex flex-col gap-8 h-[162px] shadow-lg">
+                    <div class="w-[80px] text-brand">
+                        <img class="w-5" src="assets/profitcard.svg" alt="">
+                        <span class="text-xs font-medium inline-block">Total Profit</span>
+                    </div>
+                    <div class="my-auto w-full h-[100%]">
+                        <div class="text-2xl font-bold tracking-tight text-brandGold">$90,570.4</div>
+                        <span class="text-[10px] font-bold text-brandGreen flex items-center gap-0.5 mt-0.5">+2%</span>
+                        <div class="absolute right-0 bottom-[5%]">
+                            <img class="w-[110px]" src="assets/totalprofit.png" alt="">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-cardBg border border-white/5 rounded-2xl p-2 h-[162px] shadow-lg">
+                    <div class="space-y-2 flex flex-col justify-center gap-8 mt-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-brandGold/20 flex items-center justify-center border border-brandGold/30">
+                                <img src="assets/assercard.svg" alt="">
+                            </div>
+                            <span class="text-xs font-semibold tracking-wider text-zinc-300 font-mono">XAUUSD</span>
+                        </div>
+                        <div class="text-3xl font-black tracking-tight pt-1">4702.98</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-cardBg border border-white/5 rounded-2xl flex justify-between items-end h-32 shadow-md">
+                <div class="pr-2 pt-2 relative">
+                    <div class="absolute bottom-[79px] left-[8px] text-md text-brand font-medium"><div><img class="w-5 h-5 mr-2 mt-2" src="assets/totaltradescard.svg" alt=""></div> Total Trades</div>
+                    <div class="h-auto mr-[50px] p-0 rounded-2xl opacity-65">
+                        <img class="p-0 rounded-bl-2xl" src="assets/totaltrades.png" alt="">
+                    </div>
+                </div>
+                <div class="px-2 py-1 text-3xl font-bold tracking-tight">400</div>
+            </div>
+            <div class="bg-cardBg relative border border-white/5 rounded-2xl px-3 pb-5 flex items-end h-32 shadow-md">
+                <div class="flex flex-col justify-start gap-7">
+                    <div class="text-md mt-2 text-brand font-medium block"><img class="w-5" src="assets/floatingpnlcard.svg" alt=""> Floating PnL</div>
+                    <div class="w-[150px] h-8 w-20"><img src="assets/floatingpnl.png" alt=""></div>
+                </div>
+                <div class="absolute left-[104px] text-2xl font-bold tracking-tight text-brandGold z-1">$10,650.0</div>
+            </div>
+            <div class="relative bg-cardBg border border-white/5 rounded-2xl pt-2 pr-5 pb-3 flex justify-between h-32 shadow-md">
+                <div>
+                    <div class="ml-3 text-md text-brandk"><span class="block"><img class="w-5 h-5 inline mr-1" src="assets/halftrophy.svg" alt=""></span><span class="block">Win Rate</span></div>
+                    <img class="w-[90px] absolute bottom-0" src="assets/wintrophy.png" alt="">
+                </div>
+                <div class="text-3xl mt-[65px] font-bold tracking-tight">35%</div>
+            </div>
+        </section>
+
+        <!-- Total Users & Active Subscriptions -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+            <div class="bg-cardBg border border-white/5 rounded-2xl p-3 flex flex-col justify-between h-40 shadow-xl relative">
+                <div class="flex justify-between items-start">
+                    <span class="text-md text-brand font-medium"><img class="w-7" src="assets/users.svg" alt=""> Total Users</span>
+                    <a href="totaluser.html">
+                        <button class="bg-brandGold hover:bg-brandGold text-black text-[12px] font-bold px-2.5 py-1 rounded-full border border-brandGold/20 flex items-center gap-1 transition">
+                            See More <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                        </button>
+                    </a>
+                </div>
+                <div id="total-users-count" class="text-4xl font-extrabold tracking-tight self-end mt-auto">--</div>
+            </div>
+            <div class="bg-cardBg border border-white/5 rounded-2xl p-3 flex flex-col justify-between h-40 shadow-xl">
+                <div class="flex items-center gap-1.5 text-brand">
+                    <img class="w-8" src="assets/activesubscription.svg" alt="">
+                    <span class="text-xs font-medium block">Active Subscription</span>
+                </div>
+                <div id="active-subs-count" class="text-4xl font-extrabold tracking-tight self-end mt-auto">--</div>
+            </div>
+        </section>
+
+        <!-- MT5 Accounts Section -->
+        <section class="mb-12">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 class="text-xl font-bold tracking-tight">MT5 Accounts</h2>
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none opacity-40">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    </span>
+                    <input id="search-input" type="text" placeholder="Search by account number" 
+                           oninput="filterUsers()"
+                           class="w-full bg-[#141416] border border-white/5 rounded-full pl-9 pr-4 py-2 text-sm text-white placeholder-brandMuted focus:outline-none focus:border-brandGold transition">
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="users-empty-state" style="display:none" class="flex flex-col items-center justify-center gap-3 py-20 text-center">
+                <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                    <i data-lucide="clock" class="w-5 h-5 text-zinc-500"></i>
+                </div>
+                <p class="text-sm font-medium text-zinc-400">Waiting for live data to populate</p>
+                <p class="text-xs text-zinc-600 max-w-xs">User MT5 account submissions will appear here once they connect their accounts.</p>
+            </div>
+
+            <!-- Users table -->
+            <div id="users-table-container" class="overflow-hidden" style="display:none">
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white text-[11px] font-semibold text-brand uppercase tracking-wider bg-black/20">
+                                <th class="py-4 px-6">Account Number</th>
+                                <th class="py-4 px-6">Name</th>
+                                <th class="py-4 px-6">Server</th>
+                                <th class="py-4 px-6">Status</th>
+                                <th class="py-4 px-6">Submitted</th>
+                                <th class="py-4 px-6 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody" class="text-xs divide-y divide-white/5 font-medium text-zinc-100">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- No search results -->
+            <div id="no-results" style="display:none" class="text-center py-10">
+                <p class="text-xs text-zinc-500">No accounts match your search.</p>
+            </div>
+        </section>
+        
+        <footer class="mt-16 text-center text-[10px] text-zinc-600 border-t border-white/5 py-6">
+            <p>© 2026 Bullion Algo System. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>lucide.createIcons();</script>
+
+    <!-- Chart dropdown -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('dropdown-btn');
+            const menu = document.getElementById('dropdown-menu');
+            const chevron = document.getElementById('dropdown-chevron');
+            const rangeText = document.getElementById('current-range-text');
+            const labelsContainer = document.getElementById('chart-labels');
+
+            const labelPresets = {
+                '7days': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                '30days': ['1', '5', '10', '15', '20', '25', '30'],
+                '6months': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June']
+            };
+            const textPresets = { '7days': '7 Days', '30days': '30 Days', '6months': '6 Months' };
+
+            btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); chevron.classList.toggle('rotate-180'); });
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !menu.contains(e.target)) { menu.classList.add('hidden'); chevron.classList.remove('rotate-180'); }
+            });
+            document.querySelectorAll('#dropdown-menu button[data-view]').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const view = e.currentTarget.getAttribute('data-view').toLowerCase();
+                    if (textPresets[view]) { rangeText.textContent = textPresets[view]; labelsContainer.innerHTML = labelPresets[view].map(label => `<span>${label}</span>`).join(''); }
+                    menu.classList.add('hidden'); chevron.classList.remove('rotate-180');
+                });
+            });
+        });
+    </script>
+
+    <!-- Invite dropdown -->
+    <script>
+        function toggleInviteDropdown(event) {
+            event.stopPropagation();
+            const dropdownMenu = document.getElementById('invite-dropdown-menu');
+            dropdownMenu.classList.toggle('hidden');
+            if (dropdownMenu.classList.contains('hidden')) {
+                closeAllAccessDropdowns();
+            }
+        }
+
+        function closeAllAccessDropdowns() {
+            document.querySelectorAll('.access-dropdown').forEach(menu => menu.classList.add('hidden'));
+            document.querySelectorAll('.access-trigger svg').forEach(svg => svg.classList.remove('rotate-180'));
+        }
+
+        document.addEventListener('click', (e) => {
+            const inviteMenu = document.getElementById('invite-dropdown-menu');
+            if (inviteMenu && !inviteMenu.classList.contains('hidden')) {
+                if (!inviteMenu.contains(e.target)) {
+                    inviteMenu.classList.add('hidden');
+                    closeAllAccessDropdowns();
+                }
+            }
+        });
+    </script>
+
+    <!-- Admin auth check -->
+    <script>
+        async function checkAdmin() {
+            try {
+                const res = await fetch('http://localhost:3000/auth/me', { credentials: 'include' });
+                const data = await res.json();
+
+                if (!data.loggedIn) { window.location.href = 'http://localhost:3000/index.html'; return; }
+                if (data.user.role !== 'admin') { window.location.href = 'http://localhost:3000/userdashboard.html'; return; }
+
+                document.getElementById('admin-name').textContent = `Welcome ${data.user.name}!`;
+            } catch (err) {
+                console.error('Admin check failed:', err);
+                window.location.href = 'http://localhost:3000/index.html';
+            }
+        }
+        checkAdmin();
+    </script>
+
+    <!-- Invite modal logic -->
+    <script>
+        async function loadAdmins() {
+            try {
+                const res = await fetch('http://localhost:3000/admin/admins', { credentials: 'include' });
+                const data = await res.json();
+                const list = document.getElementById('admins-list');
+
+                if (!data.admins || data.admins.length === 0) {
+                    list.innerHTML = '<p class="text-[11px] text-zinc-500">No admins found.</p>';
+                    return;
+                }
+
+                list.innerHTML = data.admins.map(admin => `
+                    <div class="flex items-center justify-between gap-3 py-1">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+                                ${admin.avatar 
+                                    ? `<img src="${admin.avatar}" class="w-full h-full object-cover" alt="${admin.name}">`
+                                    : `<div class="w-full h-full bg-brandGold/20 flex items-center justify-center text-brandGold font-bold text-sm">${admin.name.charAt(0).toUpperCase()}</div>`
+                                }
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[13px] font-semibold text-zinc-200 leading-snug">${admin.name}</span>
+                                <span class="text-[11px] text-zinc-500 font-medium -mt-0.5">${admin.email}</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] font-semibold text-brandGold">Admin</span>
+                    </div>
+                `).join('');
+
+                // Update invite button avatars
+                const avatarContainer = document.getElementById('invite-btn-avatars');
+                if (avatarContainer) {
+                    avatarContainer.innerHTML = data.admins.slice(0, 3).map(admin => `
+                        ${admin.avatar 
+                            ? `<img class="w-5 h-5 rounded-full border border-dashBg object-cover" src="${admin.avatar}" alt="${admin.name}">`
+                            : `<div class="w-5 h-5 rounded-full border border-dashBg bg-brandGold/20 flex items-center justify-center text-brandGold font-bold text-[9px]">${admin.name.charAt(0).toUpperCase()}</div>`
+                        }
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Could not load admins:', err);
+            }
+        }
+
+        async function sendInvite() {
+            const email = document.getElementById('invite-email-input').value;
+            const message = document.getElementById('invite-message');
+
+            if (!email) {
+                message.textContent = 'Please enter an email address.';
+                message.className = 'text-[11px] mb-3 text-brandRed';
+                message.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch('http://localhost:3000/admin/invite', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    message.textContent = data.message;
+                    message.className = 'text-[11px] mb-3 text-brandGreen';
+                    document.getElementById('invite-email-input').value = '';
+                    loadAdmins();
+                } else {
+                    message.textContent = data.error;
+                    message.className = 'text-[11px] mb-3 text-brandRed';
+                }
+                message.classList.remove('hidden');
+            } catch (err) {
+                message.textContent = 'Could not connect to server.';
+                message.className = 'text-[11px] mb-3 text-brandRed';
+                message.classList.remove('hidden');
+            }
+        }
+
+        const originalToggle = window.toggleInviteDropdown;
+        window.toggleInviteDropdown = function(event) {
+            originalToggle(event);
+            const menu = document.getElementById('invite-dropdown-menu');
+            if (!menu.classList.contains('hidden')) { loadAdmins(); }
+        }
+    </script>
+
+    <!-- MT5 accounts + stats -->
+    <script>
+        let allAccounts = [];
+        let selectedAccountId = null;
+
+        async function loadAdminData() {
+            try {
+                // Load stats
+                const statsRes = await fetch('http://localhost:3000/admin/stats', { credentials: 'include' });
+                const statsData = await statsRes.json();
+                document.getElementById('total-users-count').textContent = statsData.totalUsers ?? '--';
+                document.getElementById('active-subs-count').textContent = statsData.activeSubscriptions ?? '--';
+
+                // Load MT5 accounts
+                const accountsRes = await fetch('http://localhost:3000/admin/mt5-accounts', { credentials: 'include' });
+                const accountsData = await accountsRes.json();
+                allAccounts = accountsData.accounts || [];
+
+                renderUsers(allAccounts);
+            } catch (err) {
+                console.error('Could not load admin data:', err);
+            }
+        }
+
+        function renderUsers(accounts) {
+            const tbody = document.getElementById('users-tbody');
+            const tableContainer = document.getElementById('users-table-container');
+            const emptyState = document.getElementById('users-empty-state');
+            const noResults = document.getElementById('no-results');
+
+            noResults.style.display = 'none';
+
+            if (!accounts || accounts.length === 0) {
+                tableContainer.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tableContainer.style.display = 'block';
+
+            tbody.innerHTML = accounts.map(acc => {
+                const statusColor = acc.status === 'connected' ? 'text-brandGreen' 
+                                  : acc.status === 'pending' ? 'text-brandGold' 
+                                  : 'text-brandRed';
+                const date = acc.created_at ? new Date(acc.created_at).toLocaleDateString() : '--';
+
+                return `
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="py-4 px-6 text-zinc-200 font-mono">#${acc.account_number}</td>
+                        <td class="py-4 px-6">${acc.users?.name || '--'}</td>
+                        <td class="py-4 px-6 text-zinc-400">${acc.server}</td>
+                        <td class="py-4 px-6 ${statusColor} font-semibold capitalize">${acc.status}</td>
+                        <td class="py-4 px-6 text-zinc-400 font-mono">${date}</td>
+                        <td class="py-4 px-6 text-right">
+                            <button onclick="openStatusModal('${acc.id}', '${acc.account_number}', '${acc.users?.name || ''}')"
+                                    class="text-[11px] font-semibold text-zinc-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1 rounded-full transition cursor-pointer">
+                                Update
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const noResults = document.getElementById('no-results');
+
+            if (!query) {
+                renderUsers(allAccounts);
+                return;
+            }
+
+            const filtered = allAccounts.filter(acc => 
+                acc.account_number?.toLowerCase().includes(query) ||
+                acc.users?.name?.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                document.getElementById('users-table-container').style.display = 'none';
+                document.getElementById('users-empty-state').style.display = 'none';
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+                renderUsers(filtered);
+            }
+        }
+
+        function openStatusModal(id, accountNumber, name) {
+            selectedAccountId = id;
+            document.getElementById('status-modal-user').textContent = `${name} — #${accountNumber}`;
+            document.getElementById('status-modal').showModal();
+        }
+
+        async function updateStatus(status) {
+            if (!selectedAccountId) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/admin/mt5-accounts/${selectedAccountId}`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('status-modal').close();
+                    loadAdminData(); // Refresh the table
+                } else {
+                    alert(data.error || 'Could not update status.');
+                }
+            } catch (err) {
+                alert('Could not connect to server.');
+            }
+        }
+
+        loadAdminData();
+    </script>
+    
+</body>
+</html>

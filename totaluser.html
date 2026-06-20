@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Users - Bullion Algo System</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dashBg: '#09090b',
+                        cardBg: '#121214',
+                        brandGold: '#EAA83A',
+                        brandGreen: '#25C06D',
+                        brandRed: '#E54B4B',
+                        brandMuted: '#7D7D82'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: #09090b;
+        }
+        dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="text-white antialiased min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center gap-4 mt-6 mb-8">
+            <a href="admindashboard.html" class="text-zinc-500 hover:text-white transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+            <div>
+                <p class="text-[10px] font-bold text-brandMuted uppercase tracking-widest">admin dashboard</p>
+                <h1 class="text-2xl font-bold tracking-tight">Total Users</h1>
+            </div>
+        </div>
+
+        <!-- Status update modal -->
+        <dialog id="status-modal"
+                class="backdrop:bg-black/60 bg-[#121214] text-white rounded-2xl p-6 w-full max-w-[340px] shadow-2xl border border-white/5 open:flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold">Update Account Status</h3>
+                <button onclick="document.getElementById('status-modal').close()" class="text-zinc-500 hover:text-white text-xs cursor-pointer">✕</button>
+            </div>
+            <p id="status-modal-user" class="text-xs text-zinc-400"></p>
+            <div class="flex flex-col gap-2">
+                <button onclick="updateStatus('connected')"
+                        class="w-full bg-brandGreen/10 hover:bg-brandGreen/20 border border-brandGreen/30 text-brandGreen font-semibold text-xs py-2 rounded-full transition cursor-pointer">
+                    ✓ Mark as Connected
+                </button>
+                <button onclick="updateStatus('pending')"
+                        class="w-full bg-brandGold/10 hover:bg-brandGold/20 border border-brandGold/30 text-brandGold font-semibold text-xs py-2 rounded-full transition cursor-pointer">
+                    ⏳ Mark as Pending
+                </button>
+                <button onclick="updateStatus('rejected')"
+                        class="w-full bg-brandRed/10 hover:bg-brandRed/20 border border-brandRed/30 text-brandRed font-semibold text-xs py-2 rounded-full transition cursor-pointer">
+                    ✕ Mark as Rejected
+                </button>
+            </div>
+        </dialog>
+
+        <section>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <p id="users-count" class="text-xs text-zinc-500">Loading...</p>
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none opacity-40">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    </span>
+                    <input id="search-input" type="text" placeholder="Search by account number"
+                           oninput="filterUsers()"
+                           class="w-full bg-[#141416] border border-white/5 rounded-full pl-9 pr-4 py-2 text-sm text-white placeholder-brandMuted focus:outline-none focus:border-brandGold transition">
+                </div>
+            </div>
+
+            <!-- Empty state — no accounts at all -->
+            <div id="users-empty-state" style="display:none" class="flex flex-col items-center justify-center gap-3 py-24 text-center">
+                <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                    <i data-lucide="clock" class="w-5 h-5 text-zinc-500"></i>
+                </div>
+                <p class="text-sm font-medium text-zinc-400">Waiting for live data to populate</p>
+                <p class="text-xs text-zinc-600 max-w-xs">User MT5 account submissions will appear here once they connect their accounts.</p>
+            </div>
+
+            <!-- No search results -->
+            <div id="no-results" style="display:none" class="text-center py-16">
+                <p class="text-xs text-zinc-500">No accounts match your search.</p>
+            </div>
+
+            <!-- Table -->
+            <div id="users-table-container" style="display:none" class="overflow-hidden">
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 text-[11px] font-semibold text-brandMuted uppercase tracking-wider bg-black/20">
+                                <th class="py-4 px-6">Account Number</th>
+                                <th class="py-4 px-6">Name</th>
+                                <th class="py-4 px-6">Server</th>
+                                <th class="py-4 px-6">Status</th>
+                                <th class="py-4 px-6">Submitted</th>
+                                <th class="py-4 px-6 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody" class="text-xs divide-y divide-white/5 font-medium text-zinc-100">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-brandMuted/20 px-6 py-4 flex items-center justify-between rounded-xl text-xs font-medium text-brandMuted">
+                    <button id="prev-btn" onclick="changePage(-1)" class="flex items-center gap-1 hover:text-white transition cursor-pointer">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
+                    </button>
+                    <span id="pagination-info" class="text-zinc-200"></span>
+                    <button id="next-btn" onclick="changePage(1)" class="flex items-center gap-1 hover:text-white transition cursor-pointer">
+                        Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <footer class="mt-16 text-center text-[10px] text-zinc-600 border-t border-white/5 py-6">
+            <p>© 2026 Bullion Algo System. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>lucide.createIcons();</script>
+
+    <script>
+        let allAccounts = [];
+        let filteredAccounts = [];
+        let currentPage = 1;
+        const PAGE_SIZE = 10;
+        let selectedAccountId = null;
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('http://localhost:3000/admin/mt5-accounts', { credentials: 'include' });
+                const data = await res.json();
+                allAccounts = data.accounts || [];
+                filteredAccounts = allAccounts;
+
+                document.getElementById('users-count').textContent = 
+                    `${allAccounts.length} account${allAccounts.length !== 1 ? 's' : ''} total`;
+
+                renderPage();
+            } catch (err) {
+                console.error('Could not load users:', err);
+                document.getElementById('users-count').textContent = 'Could not load data.';
+            }
+        }
+
+        function renderPage() {
+            const tbody = document.getElementById('users-tbody');
+            const tableContainer = document.getElementById('users-table-container');
+            const emptyState = document.getElementById('users-empty-state');
+            const noResults = document.getElementById('no-results');
+            const paginationInfo = document.getElementById('pagination-info');
+
+            noResults.style.display = 'none';
+
+            if (allAccounts.length === 0) {
+                emptyState.style.display = 'flex';
+                tableContainer.style.display = 'none';
+                return;
+            }
+
+            if (filteredAccounts.length === 0) {
+                emptyState.style.display = 'none';
+                tableContainer.style.display = 'none';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tableContainer.style.display = 'block';
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pageData = filteredAccounts.slice(start, end);
+            const totalPages = Math.ceil(filteredAccounts.length / PAGE_SIZE);
+
+            paginationInfo.textContent = `Showing ${start + 1}–${Math.min(end, filteredAccounts.length)} of ${filteredAccounts.length}`;
+            document.getElementById('prev-btn').style.opacity = currentPage === 1 ? '0.3' : '1';
+            document.getElementById('next-btn').style.opacity = currentPage >= totalPages ? '0.3' : '1';
+
+            tbody.innerHTML = pageData.map(acc => {
+                const statusColor = acc.status === 'connected' ? 'text-brandGreen'
+                                  : acc.status === 'pending' ? 'text-brandGold'
+                                  : 'text-brandRed';
+                const date = acc.created_at ? new Date(acc.created_at).toLocaleDateString() : '--';
+
+                return `
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="py-4 px-6 text-zinc-200 font-mono">#${acc.account_number}</td>
+                        <td class="py-4 px-6">${acc.users?.name || '--'}</td>
+                        <td class="py-4 px-6 text-zinc-400">${acc.server}</td>
+                        <td class="py-4 px-6 ${statusColor} font-semibold capitalize">${acc.status}</td>
+                        <td class="py-4 px-6 text-zinc-400 font-mono">${date}</td>
+                        <td class="py-4 px-6 text-right">
+                            <button onclick="openStatusModal('${acc.id}', '${acc.account_number}', '${acc.users?.name || ''}')"
+                                    class="text-[11px] font-semibold text-zinc-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1 rounded-full transition cursor-pointer">
+                                Update
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            currentPage = 1;
+
+            if (!query) {
+                filteredAccounts = allAccounts;
+            } else {
+                filteredAccounts = allAccounts.filter(acc =>
+                    acc.account_number?.toLowerCase().includes(query) ||
+                    acc.users?.name?.toLowerCase().includes(query)
+                );
+            }
+
+            renderPage();
+        }
+
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredAccounts.length / PAGE_SIZE);
+            const newPage = currentPage + direction;
+            if (newPage < 1 || newPage > totalPages) return;
+            currentPage = newPage;
+            renderPage();
+        }
+
+        function openStatusModal(id, accountNumber, name) {
+            selectedAccountId = id;
+            document.getElementById('status-modal-user').textContent = `${name} — #${accountNumber}`;
+            document.getElementById('status-modal').showModal();
+        }
+
+        async function updateStatus(status) {
+            if (!selectedAccountId) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/admin/mt5-accounts/${selectedAccountId}`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('status-modal').close();
+                    loadUsers();
+                } else {
+                    alert(data.error || 'Could not update status.');
+                }
+            } catch (err) {
+                alert('Could not connect to server.');
+            }
+        }
+
+        loadUsers();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
+    <title>Bullion Algo Systems - Execute With Precision</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#050505',
+                        cardBg: '#111112',
+                        brandGold: '#EAA83A',
+                        brandMuted: '#7D7D82'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Geist', sans-serif; background-color: #050505; }
+        html { scroll-behavior: smooth; }
+        .orderbook-text { font-family: monospace; font-size: 11px; letter-spacing: 0.5px; }
+        .logo-shadow, .btn_shadow { box-shadow: 0 0 15px rgba(250, 250, 250, 0.35); }
+        .text_shadow { text-shadow: 0 0 20px rgba(250, 250, 250, 0.682); }
+        .active-btn-glow { box-shadow: 0 0 15px rgba(37, 192, 109, 0.35); }
+        .danger-btn-glow { box-shadow: 0 0 15px rgba(242, 26, 2, 0.35); }
+        .coin-ring { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), 0 2px 3px rgba(0,0,0,0.3); }
+        .tree-line-container { position: relative; }
+        .tree-line-container::before { content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 40px; background: linear-gradient(to bottom, #EAA83A, #333); }
+        .tree-branches { position: relative; width: 66%; margin: 0 auto; height: 50px; border-top: 2px solid #333; border-left: 2px solid #333; border-right: 2px solid #333; border-top-left-radius: 16px; border-top-right-radius: 16px; }
+        .tree-branches::after { content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background-color: #EAA83A; transform: translateX(-50%); }
+        .candle-stick { position: relative; width: 4px; background-color: #EAA83A; border-radius: 1px; }
+        .candle-stick::before { content: ''; position: absolute; left: 1.5px; width: 1px; background-color: #40403d92; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px) rotate(-22.5deg); } 50% { transform: translateY(-12px) rotate(-22.5deg); } }
+        @keyframes floatRight { 0%, 100% { transform: translateY(0px) rotate(45deg); } 50% { transform: translateY(-10px) rotate(45deg); } }
+        @keyframes glowPulse { 0%, 100% { box-shadow: 0 0 15px rgba(234, 168, 58, 0.3); } 50% { box-shadow: 0 0 30px rgba(234, 168, 58, 0.7); } }
+        .animate-hero-title { animation: fadeUp 0.9s ease forwards; animation-delay: 0.2s; opacity: 0; }
+        .animate-hero-sub { animation: fadeUp 0.9s ease forwards; animation-delay: 0.45s; opacity: 0; }
+        .animate-hero-btns { animation: fadeUp 0.9s ease forwards; animation-delay: 0.65s; opacity: 0; }
+        .animate-hero-badge { animation: fadeIn 0.8s ease forwards; animation-delay: 0.1s; opacity: 0; }
+        .animate-header { animation: fadeIn 0.7s ease forwards; opacity: 0; }
+        .animate-card-left { animation: slideInLeft 0.8s ease forwards; animation-delay: 0.8s; opacity: 0; }
+        .animate-card-right { animation: slideInRight 0.8s ease forwards; animation-delay: 1s; opacity: 0; }
+        .coin-float-left { animation: float 4s ease-in-out infinite; }
+        .coin-float-right { animation: floatRight 5s ease-in-out infinite; }
+        .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-left { opacity: 0; transform: translateX(-40px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal-left.visible { opacity: 1; transform: translateX(0); }
+        .reveal-right { opacity: 0; transform: translateX(40px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal-right.visible { opacity: 1; transform: translateX(0); }
+        .reveal-scale { opacity: 0; transform: scale(0.93); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal-scale.visible { opacity: 1; transform: scale(1); }
+        .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .hover-glow { transition: box-shadow 0.3s ease; }
+        .hover-glow:hover { box-shadow: 0 0 25px rgba(234, 168, 58, 0.35); }
+        .btn-pulse:hover { animation: glowPulse 1.2s ease-in-out infinite; }
+
+        /* Plan selector tabs */
+        .plan-tab { transition: all 0.2s ease; }
+        .plan-tab.active { background: #EAA83A; color: #000; font-weight: 700; }
+        .plan-tab:not(.active) { background: transparent; color: #7D7D82; }
+    </style>
+</head>
+<body class="text-white font-Geist overflow-x-hidden pb-8">
+
+    <div class="relative mt-10">
+        <div class="coin-float-left absolute top-44 left-[27%] bottom-4 w-25 h-25 mb-5 transform -rotate-22.5 hidden lg:block z-0"><img class="w-24 h-24 rounded-full border-2 border-darkBg object-cover" src="assets/coin.svg" alt="Trader profile"></div>
+        <div class="coin-float-right absolute top-48 right-[25%] w-25 h-25 transform rotate-45 hidden lg:block z-0"><img class="w-23 h-23 rounded-full border-2 border-darkBg object-cover" src="assets/coin-two.svg" alt="Trader profile"></div>
+    
+        <header class="animate-header max-w-5xl mx-auto md:mx-auto my-5 px-4 py-2 bg-brandGold/10 backdrop-blur-md border border-white/5 rounded-full flex items-center justify-between relative z-50">
+            <div class="flex items-center gap-3">
+                <img class="w-10 h-10 object-contain" src="assets/logo-colored.svg" alt="Logo">
+                <span class="logo-shadow w-[1px] h-8 bg-white/20"></span>
+                <span class="text_shadow font-bold w-9 text-[10px] tracking-wider">BULLION ALGO SYSTEM</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 text-xs font-medium text-brandMuted">
+                <a href="userdashboard.html" class="text_shadow hover:text-white transition">Dashboard</a>
+                <a href="#how-it-works" class="text_shadow hover:text-white transition">How It Works</a>
+                <a href="#pricing" class="text_shadow hover:text-white transition">Pricing</a>
+                <a href="#faq" class="text_shadow hover:text-white transition">FAQ</a>
+            </nav>
+            <div class="hidden md:flex items-center gap-3">
+                <div class="relative inline-block p-[1px] rounded-full bg-gradient-to-r from-[#b0afafc5] to-[#f0ededc5]">
+                    <a href="#access" class="btn-pulse bg-brandGold hover:bg-amber-500 text-black font-bold text-xs w-36 py-2 rounded-full transition block text-center shadow-lg shadow-brandGold/10">Get Access</a>
+                </div>
+                <div class="relative inline-block p-[1px] rounded-full bg-gradient-to-r from-[#c57d03] to-[#ff9900]">
+                    <a href="http://localhost:3000/auth/google" class="bg-[#050505] hover:bg-white/5 text-white font-bold text-xs w-32 py-2 rounded-full transition block text-center">Log In</a>
+                </div>
+            </div>
+            <button onclick="toggleMobileSidebar()" class="md:hidden flex items-center justify-center p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white focus:outline-none" aria-label="Toggle Menu">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <div id="mobileSidebar" class="fixed inset-0 z-[100] translate-x-full transition-transform duration-300 ease-in-out pointer-events-none">
+            <div onclick="toggleMobileSidebar()" class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300 ease-in-out pointer-events-auto" id="sidebarBackdrop"></div>
+            <div class="absolute right-0 top-0 bottom-0 w-72 bg-[#0c0c0e] border-l border-white/5 p-6 flex flex-col justify-between pointer-events-auto">
+                <div>
+                    <div class="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+                        <div class="flex items-center gap-2">
+                            <img class="w-8 h-8 object-contain" src="assets/logo-colored.svg" alt="Logo">
+                            <span class="font-bold text-[10px] tracking-wider text-white">BULLION ALGO</span>
+                        </div>
+                        <button onclick="toggleMobileSidebar()" class="p-1.5 rounded-full bg-white/5 text-zinc-400 hover:text-white transition">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <nav class="flex flex-col gap-4 text-sm font-semibold text-zinc-400">
+                        <a onclick="toggleMobileSidebar()" href="userdashboard.html" class="flex items-center gap-3 py-2 px-3 rounded-xl text-white transition"><i data-lucide="layout-dashboard" class="w-4 h-4 text-brandGold"></i> Dashboard</a>
+                        <a onclick="toggleMobileSidebar()" href="#how-it-works" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/[0.02] hover:text-white transition"><i data-lucide="help-circle" class="w-4 h-4"></i> How It Works</a>
+                        <a onclick="toggleMobileSidebar()" href="#pricing" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/[0.02] hover:text-white transition"><i data-lucide="credit-card" class="w-4 h-4"></i> Pricing</a>
+                        <a onclick="toggleMobileSidebar()" href="#faq" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/[0.02] hover:text-white transition"><i data-lucide="message-square" class="w-4 h-4"></i> FAQ</a>
+                    </nav>
+                </div>
+                <div class="space-y-3 pt-6 border-t border-white/5">
+                    <div class="relative w-full p-[1px] rounded-full bg-gradient-to-r from-[#b0afafc5] to-[#f0ededc5]">
+                        <a onclick="toggleMobileSidebar()" href="#pricing" class="bg-brandGold text-black font-bold text-xs py-3 rounded-full transition block text-center w-full">Get Access Now</a>
+                    </div>
+                    <div class="relative w-full p-[1px] rounded-full bg-gradient-to-r from-[#c57d03] to-[#ff9900]">
+                        <a onclick="toggleMobileSidebar()" href="http://localhost:3000/auth/google" class="bg-[#0c0c0e] text-white font-bold text-xs py-3 rounded-full transition block text-center w-full">Log In</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="max-w-5xl mx-auto px-6 mt-4 text-center pt-16 pb-12 relative z-10">
+        <div class="flex justify-center space-x-2 mb-5 animate-hero-badge">
+            <div class="flex justify-center -space-x-2 mb-5">
+                <img class="w-15 h-8 rounded-full border-2 border-darkBg object-cover" src="assets/avatar.png" alt="Trader profile">
+            </div>
+            <p class="ml-1 mt-2 text-[13px]">
+                <span>Join 50k+</span> <span class="text-brandGold">traders</span> <span>worldwide</span>
+            </p>
+        </div>
+        <h1 class="animate-hero-title text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] text-white">
+            Trade Without <span class="text-brandGold">Emotion.</span><br>
+            Execute With <span class="text-brandGold">Precision.</span>
+        </h1>
+        <p class="animate-hero-sub mt-5 text-sm sm:text-sm text-brand max-w-2xl mx-auto leading-relaxed">
+            Automate retail algorithms into operational logic models designed to capture infrastructure trends efficiently and secure maximum returns.
+        </p>
+        <div class="animate-hero-btns mt-8 flex justify-center gap-3.5">
+            <a href="#access"><button class="border border-[#a86001] text-white text-xs font-semibold px-10 py-1 rounded-full hover:bg-white/5 transition">Get Access</button></a>
+            <a href="#performance"><button class="bg-brandGold border-2 border-[#b0afafc5] hover:bg-amber-500 text-black text-xs font-bold px-6 py-1 rounded-full transition shadow-lg shadow-brandGold/10">View Performance <span class="text-white">→</span></button></a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mt-16 max-w-2xl mx-auto text-left">
+            <div class="animate-card-left md:col-span-5 bg-[#121213] border border-white/5 rounded-2xl p-6 flex flex-col justify-between max-h-[380px] shadow-2xl relative">
+                <h3 class="text-xs font-bold text-white tracking-widest uppercase">FULLY AUTOMATED</h3>
+                <div class="flex justify-center gap-10 my-auto orderbook-text">
+                    <img class="w-auo object-fill" src="assets/hero-section-illustration-(buy-sell).svg" alt="buy sell history">
+                </div>
+            </div>
+            <div class="animate-card-right md:col-span-7 flex flex-col gap-3">
+                <div class="bg-[#121213] border border-white/5 rounded-2xl p-6 flex flex-col justify-between h-[182px] shadow-2xl">
+                    <h3 class="text-xs font-bold text-white tracking-widest uppercase">3-5X MONTHLY ROI</h3>
+                    <div class="w-full h-full flex items-end justify-center gap-4 mb-2">
+                        <img class="w-[230px] object-cover" src="assets/hero-section-illustration-(coins).svg" alt="gold focus">
+                    </div>
+                </div>
+                <div class="bg-[#121213] max-w-50 border border-white/5 rounded-2xl p-3 flex flex-col justify-between h-[182px] shadow-2xl relative overflow-hidden">
+                    <h3 class="text-xs font-bold text-white tracking-widest uppercase relative z-20">40% WIN RATE</h3>
+                    <div class="sticky top-10 left-60 right-6 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl p-3 space-y-1.5 z-20 w-[170px] shadow-2xl">
+                        <div class="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span class="flex items-center gap-1">⚝ Total Balance</span>
+                            <span class="text-[#EAA83A] font-mono font-bold">$200,000</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[10px] text-zinc-400">
+                            <span class="flex items-center gap-1">⚝ Winrate</span>
+                            <span class="text-[#25C06D] font-mono font-bold">40%</span>
+                        </div>
+                    </div>
+                    <div class="w-full h-100% opacity-100 mt-auto relative z-0 px-1">
+                        <img class="w-100% h-50% absolute bottom-0 object-cover" src="assets/winrate.png" alt="gold focus">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="max-w-5xl mx-auto px-6 py-16 text-center">
+        <span class="text-[9px] font-bold tracking-[0.2em] text-black bg-brandGold px-3 py-1 rounded-full uppercase">Problem</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold mt-4 mb-10">Manual Trading is the Bottleneck</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+            <div class="reveal hover-lift bg-brandGold text-black p-6 rounded-xl flex flex-col justify-between h-48 shadow-lg shadow-brandGold/5">
+                <h3 class="font-extrabold text-base tracking-tight">Missed Entry</h3>
+                <p class="text-sm opacity-90 leading-relaxed font-medium">The setup was perfect. You hesitated.</p>
+            </div>
+            <div class="reveal hover-lift bg-[#121213] border border-white/5 p-6 rounded-xl flex flex-col justify-between h-48">
+                <h3 class="font-bold text-base tracking-tight text-white">Early Exits</h3>
+                <p class="text-sm text-brandMuted leading-relaxed">You cut the trade before it could play out.</p>
+            </div>
+            <div class="reveal hover-lift bg-brandGold text-black p-6 rounded-xl flex flex-col justify-between h-48 shadow-lg shadow-brandGold/5">
+                <h3 class="font-extrabold text-base tracking-tight">Revenge Trades</h3>
+                <p class="text-sm opacity-90 leading-relaxed font-medium">One loss turned into a spiral.</p>
+            </div>
+            <div class="reveal hover-lift bg-[#121213] border border-white/5 p-6 rounded-xl flex flex-col justify-between h-48">
+                <h3 class="font-bold text-base tracking-tight text-white">Screen Fatigue</h3>
+                <p class="text-sm text-brandMuted leading-relaxed">Too much time watching. Not enough consistency.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="max-w-4xl mx-auto px-6 py-12">
+        <div class="text-center mb-8">
+            <span class="text-[9px] font-bold tracking-[0.2em] text-black bg-brandGold px-3 py-1 rounded-full uppercase">Solution</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold mt-4">Built to Execute, Not Hesitate</h2>
+        </div>
+        <div class="reveal-scale bg-[#121213] border border-white/5 rounded-2xl p-6 md:p-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            <div class="md:col-span-5 bg-black/50 rounded-xl p-4 border border-white/5 h-44 flex items-center justify-center relative overflow-auto">
+                <img class="w-100% h-50% absolute bottom-0 object-cover" src="assets/solution-section.webp" alt="gold focus">
+            </div>
+            <div class="md:col-span-7">
+                <h3 class="text-lg font-bold mb-4 tracking-tight">Bullion Algo Systems removes human error from trading.</h3>
+                <ul class="space-y-3 text-xs text-zinc-400">
+                    <li class="flex items-center gap-2.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-brandGold shrink-0"></i> No second guessing.</li>
+                    <li class="flex items-center gap-2.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-brandGold shrink-0"></i> No emotional or psychological interference.</li>
+                    <li class="flex items-center gap-2.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-brandGold shrink-0"></i> Just consistent execution.</li>
+                </ul>
+                <a href="#access"><button class="btn-pulse mt-6 bg-brandGold hover:bg-amber-500 text-black text-sm font-bold px-6 py-2 rounded-full transition w-full w-auto shadow-md">Get Access</button></a>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="max-w-5xl mx-auto px-6 py-16 text-center">
+        <h2 class="text-2xl sm:text-3xl font-extrabold mb-4">How it Works</h2>
+        <div class="hidden md:block w-full">
+            <div class="tree-line-container"></div>
+            <div class="tree-branches"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-6 text-center">
+            <div class="px-4">
+                <h4 class="font-bold text-sm text-brand tracking-widest mb-2">1. Access <span class="text-brandGold">trading bot</span></h4>
+                <p class="text-[14px] text-zinc-200 max-w-xs mx-auto leading-relaxed">Access the bot by subscribing to a plan on the website.</p>
+            </div>
+            <div class="p-5 rounded-2xl shadow-xl max-w-sm mx-auto w-[230px]">
+                <h4 class="font-bold text-sm text-white tracking-widest mb-2">2. Open <span class="text-brandGold">broker Account</span> <span>and</span><span class="text-brandGold"> Connect</span></h4>
+                <p class="text-[14px] text-white leading-relaxed">Open a broker account, and connect the bot to your MT5 or MT4.</p>
+            </div>
+            <div class="px-4">
+                <h4 class="font-bold text-sm text-brand tracking-widest mb-2">3. Activate <span class="text-brandGold">bot</span></h4>
+                <p class="text-[14px] text-zinc-200 max-w-xs mx-auto leading-relaxed">Activate bot on your dashboard to enable it execute trades.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== PRICING SECTION ===================== -->
+    <section id="access" class="max-w-4xl mx-auto px-6 py-16 text-center">
+        <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Access the Algo</h2>
+        <p class="text-sm text-brand mb-8">Simple, transparent pricing. No hidden conditions.</p>
+
+        <!-- 3-way plan selector -->
+        <div class="flex items-center justify-center mb-12">
+            <div class="flex bg-white/5 border border-white/10 rounded-full p-1 gap-1">
+                <button id="tab-monthly" onclick="selectPlan('monthly')" class="plan-tab active text-xs font-semibold px-5 py-2 rounded-full transition">Monthly</button>
+                <button id="tab-semi" onclick="selectPlan('semi')" class="plan-tab text-xs font-semibold px-5 py-2 rounded-full transition">Semi-Annual</button>
+                <button id="tab-yearly" onclick="selectPlan('yearly')" class="plan-tab text-xs font-semibold px-5 py-2 rounded-full transition">Yearly</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left items-stretch max-w-2xl mx-auto">
+
+            <!-- Premium Card -->
+            <div class="relative group reveal hover-lift">
+                <div class="bg-[#121213] border border-white/10 rounded-2xl p-6 flex flex-col justify-between relative shadow-xl h-full">
+                    <div class="absolute w-20 h-6 top-4 right-4 flex justify-center items-center gap-2 bg-black text-brandGold text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+                        <i data-lucide="rocket" class="w-3.5 h-3.5 text-[#EAA83A] fill-[#EAA83A]" style="transform: rotate(20deg);"></i>
+                        <span>Popular</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold mb-1">Premium</h3>
+
+                        <!-- Price display — updated by JS -->
+                        <div class="my-4">
+                            <div class="flex items-baseline gap-1">
+                                <span id="premium-price" class="text-3xl font-black text-white">$35.00</span>
+                                <span id="premium-period" class="text-sm text-zinc-200">/ mo</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-white leading-relaxed mb-6">Gain access to an algorithm built to execute seamlessly and effectively.</p>
+
+                        <label for="payment-modal-toggle" class="w-full bg-brandGold hover:bg-amber-500 text-black font-extrabold text-xs py-2 rounded-full transition mb-6 shadow-md block text-center cursor-pointer select-none btn-pulse">
+                            Get Access
+                        </label>
+
+                        <hr class="border-white/5 mb-5">
+                        <ul class="space-y-3.5 text-xs text-zinc-200">
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-[#EAA83A]"></i> Full algorithm access rules layout</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-[#EAA83A]"></i> MT4 & MT5 integration options</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-[#EAA83A]"></i> Up to 1.5% maximum trade risk cap</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-[#EAA83A]"></i> 24/7 dedicated server cluster hosting</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Payment modal — overlays the card -->
+                <input type="checkbox" id="payment-modal-toggle" class="sr-only peer/modal">
+                <div class="absolute inset-0 bg-[#111112] rounded-2xl p-6 border border-white/10 shadow-2xl flex flex-col justify-between z-30 opacity-0 pointer-events-none scale-95 transition-all duration-300 peer-checked/modal:opacity-100 peer-checked/modal:pointer-events-auto peer-checked/modal:scale-100">
+                    <label for="payment-modal-toggle" class="absolute top-4 right-4 text-zinc-500 hover:text-white transition text-xs cursor-pointer p-1">✕</label>
+                    <div>
+                        <h2 class="text-center text-sm font-medium tracking-wide text-zinc-200">Total amount due</h2>
+                        <div class="mt-3">
+                            <p class="text-[12px] text-zinc-300 mb-0.5">Fee, excluding VAT</p>
+                            <div class="flex items-baseline justify-start gap-1">
+                                <span id="modal-price" class="text-3xl font-extrabold text-[#EAA83A] tracking-tight">$35.00</span>
+                            </div>
+                            <p id="modal-label" class="text-[11px] text-zinc-300 mt-0.5">
+                                Bullion Algo <span class="text-brandGold">monthly subscription</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex-1 flex flex-col justify-end">
+                        <h3 class="text-center text-xs font-semibold text-white mb-3">Select Payment Method</h3>
+                        <form id="payment-form">
+                            <div class="space-y-2.5">
+                                <label class="flex items-center justify-between p-2.5 rounded-xl bg-[#1c1c1e]/60 border border-white/[0.02] hover:border-white/10 transition cursor-pointer group">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-black flex items-center justify-center p-1.5 border border-white/5">
+                                            <div class="w-full h-full rounded-sm bg-gradient-to-tr from-amber-500 to-emerald-500 opacity-90 group-hover:scale-105 transition-transform"></div>
+                                        </div>
+                                        <span class="text-xs font-medium text-zinc-200 group-hover:text-white transition">Flutterwave</span>
+                                    </div>
+                                    <input type="radio" name="payment_method" value="flutterwave" checked class="w-3.5 h-3.5 accent-[#EAA83A] bg-zinc-900 border-zinc-700 cursor-pointer">
+                                </label>
+                                <label class="flex items-center justify-between p-2.5 rounded-xl bg-[#1c1c1e]/60 border border-white/[0.02] hover:border-white/10 transition cursor-pointer group">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-black flex items-center justify-center border border-white/5">
+                                            <span class="text-[#EAA83A] font-bold text-sm tracking-tighter group-hover:scale-110 transition-transform">₿</span>
+                                        </div>
+                                        <span class="text-xs font-medium text-zinc-200 group-hover:text-white transition">Crypto</span>
+                                    </div>
+                                    <input type="radio" name="payment_method" value="crypto" class="w-3.5 h-3.5 accent-[#EAA83A] bg-zinc-900 border-zinc-700 cursor-pointer">
+                                </label>
+                                <div class="pt-2">
+                                    <button type="submit" class="w-full bg-[#EAA83A] hover:bg-amber-500 text-black font-bold text-xs py-2 rounded-full transition shadow-lg shadow-[#EAA83A]/10 transform active:scale-[0.99] cursor-pointer">
+                                        Proceed
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Card -->
+            <div class="reveal hover-lift bg-[#121213] border border-white/5 rounded-2xl p-6 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-base font-extrabold mb-2">Custom</h3>
+                    <p class="text-xs text-white leading-relaxed">Are you an investor or hedge fund manager? We have a special deal for you.</p>
+                </div>
+                <a href="https://calendly.com/your-link" target="_blank">
+                    <button class="w-full bg-brandGold hover:bg-amber-500 text-black font-extrabold text-xs py-2 rounded-full transition mb-6 shadow-md">Book a Call</button>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <div class="max-w-2xl mx-auto px-4">
+        <section class="max-w-4xl mx-auto px-6 py-16 text-left">
+            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-center mb-12 text-white">Why Bullion Algo Systems</h2>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-20">
+                <div class="md:col-span-12 bg-[#121214] border border-white/[0.04] bg-gradient-to-bl from-amber-500/10 to-transparent rounded-2xl md:p-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-xl relative overflow-hidden group">
+                    <div class="space-y-[130px] max-w-xl">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-white">Precision Over Prediction</h3>
+                        <p class="text-xs text-zinc-400 leading-relaxed pt-1">Every trade is rule-based, not opinion-based.</p>
+                    </div>
+                    <img class="w-[170px] rounded-full object-cover" src="assets/precision-over-prediction.webp" alt="Precision Prediction">
+                </div>
+                <div class="md:col-span-5 bg-[#121214] bg-gradient-to-t from-amber-500/10 to-transparent border border-white/[0.04] rounded-2xl p-6 flex flex-col justify-between min-h-[340px] shadow-xl">
+                    <div class="space-y-2"><h3 class="text-sm font-bold uppercase tracking-wider text-white">Time Freedom</h3></div>
+                    <div class="my-auto flex justify-center py-4"><img class="w-[170px] rounded-full object-cover" src="assets/time-freedom.webp" alt="Precision Prediction"></div>
+                    <p class="text-xs text-zinc-400 leading-relaxed">No charts. No monitoring. No stress.</p>
+                </div>
+                <div class="md:col-span-7 flex flex-col justify-center gap-5">
+                    <div class="bg-[#121214] border border-white/[0.04] bg-gradient-to-br from-amber-500/10 to-transparent rounded-2xl pt-4 pb-4 px-6 flex flex-col justify-center min-h-[160px] shadow-xl">
+                        <div class="flex flex-col justify-center gap-6 items-start">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-white">Emotionless Execution</h3>
+                            <img class="w-[170px] m-auto object-cover" src="assets/emotionless.png" alt="Emotionless">
+                        </div>
+                        <p class="text-xs text-zinc-400 leading-relaxed mt-4">Removes fear, greed, and hesitation completely.</p>
+                    </div>
+                    <div class="bg-[#121214] border border-white/[0.04] bg-gradient-to-br from-amber-500/10 to-transparent rounded-2xl p-6 flex flex-col justify-between min-h-[160px] shadow-xl">
+                        <div class="flex flex-col justify-between items-center gap-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-white">Gold-Focused Strategy</h3>
+                            <img class="w-[170px] rounded-full object-cover" src="assets/gold-focused-strategy.webp" alt="Gold Strategy">
+                            <p class="text-xs text-zinc-400 leading-relaxed pt-1">Optimized specifically for XAUUSD not generic markets.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4">
+        <section id="performance" class="max-w-4xl mx-auto px-6 py-12 text-center">
+            <div class="grid grid-cols-2 gap-16 mb-4">
+                <div class="reveal-scale bg-[#d6d6d7] rounded-xl h-[150px] border shadow-inner"><img class="object-cover w-full h-full rounded-xl" src="assets/result 1.png" alt=""></div>
+                <div class="reveal-scale bg-[#d6d6d7] rounded-xl h-[150px] border shadow-inner"><img class="object-cover w-full h-full rounded-xl" src="assets/result 2.png" alt=""></div>
+            </div>
+            <p class="text-[12px] font-bold tracking-[0.25em] text-brand my-6">Over 1,000 Trades Taken</p>
+            <h2 class="text-xl font-extrabold mb-4 text-white">Performance Record</h2>
+            <a href="https://www.myfxbook.com/members/Billions007/bullion-algo-bot/12050971">
+                <button class="bg-brandGold text-black text-xs font-bold px-5 py-2 rounded-full hover:bg-amber-500 transition shadow-md z-10">View Full Trading History</button>
+            </a>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="reveal-scale bg-[#d6d6d7] rounded-xl h-[150px] border shadow-inner"><img class="object-cover w-full h-full rounded-xl" src="assets/result 3.png" alt=""></div>
+                <div class="reveal-scale bg-[#d6d6d7] rounded-xl w-[250px] h-[150px] border shadow-inner z-0"><img class="object-cover w-full h-full rounded-xl" src="assets/result 4.png" alt=""></div>
+            </div>
+        </section>
+    </div>
+
+    <section id="faq" class="max-w-2xl mx-auto px-6 py-16">
+        <h2 class="text-2xl font-extrabold text-center mb-10 text-white">Have Questions?</h2>
+        <div class="divide-y divide-white/5 text-sm text-zinc-300">
+            <details class="reveal group py-1 transition-all duration-300">
+                <summary class="flex justify-between items-center py-4 cursor-pointer list-none select-none hover:text-[#EAA83A] transition-colors">
+                    <span class="font-medium">How does Bullion Algo Systems work?</span>
+                    <span class="text-[#EAA83A] font-bold text-base transition-transform duration-200 group-open:rotate-45 block transform origin-center">＋</span>
+                </summary>
+                <div class="pb-5 pt-1 text-zinc-200 text-[13px] leading-relaxed">Bullion Algo Systems is an automated trading algorithm designed for MT4 and MT5. Once installed and activated, it analyzes market conditions and executes trades based on pre-defined logic, removing the need for manual chart analysis and emotional decision-making.</div>
+            </details>
+            <details class="reveal group py-1 transition-all duration-300">
+                <summary class="flex justify-between items-center py-4 cursor-pointer list-none select-none hover:text-[#EAA83A] transition-colors">
+                    <span class="font-medium">Do I need trading experience to use it?</span>
+                    <span class="text-[#EAA83A] font-bold text-base transition-transform duration-200 group-open:rotate-45 block transform origin-center">＋</span>
+                </summary>
+                <div class="pb-5 pt-1 text-zinc-200 text-[13px] leading-relaxed">No prior trading background is required. The configuration runs autonomously once connected, though monitoring parameters can be modified directly within your integrated account terminal parameters.</div>
+            </details>
+            <details class="reveal group py-1 transition-all duration-300">
+                <summary class="flex justify-between items-center py-4 cursor-pointer list-none select-none hover:text-[#EAA83A] transition-colors">
+                    <span class="font-medium">Is capital guaranteed safely?</span>
+                    <span class="text-[#EAA83A] font-bold text-base transition-transform duration-200 group-open:rotate-45 block transform origin-center">＋</span>
+                </summary>
+                <div class="pb-5 pt-1 text-zinc-200 text-[13px] leading-relaxed">Risk caps are hardcoded into the framework execution rules, maintaining a strict stop allocation per trade structure to safe-keep initial operational balance configurations.</div>
+            </details>
+            <details class="reveal group py-1 transition-all duration-300">
+                <summary class="flex justify-between items-center py-4 cursor-pointer list-none select-none hover:text-[#EAA83A] transition-colors">
+                    <span class="font-medium">Can I monitor or control my account status?</span>
+                    <span class="text-[#EAA83A] font-bold text-base transition-transform duration-200 group-open:rotate-45 block transform origin-center">＋</span>
+                </summary>
+                <div class="pb-5 pt-1 text-zinc-200 text-[13px] leading-relaxed">Yes, live status interfaces allow deep analytical monitoring through connected dashboard tools, and allocations can be switched dynamically when required.</div>
+            </details>
+            <details class="reveal group py-1 transition-all duration-300">
+                <summary class="flex justify-between items-center py-4 cursor-pointer list-none select-none hover:text-[#EAA83A] transition-colors">
+                    <span class="font-medium">What brokers does the system tools run?</span>
+                    <span class="text-[#EAA83A] font-bold text-base transition-transform duration-200 group-open:rotate-45 block transform origin-center">＋</span>
+                </summary>
+                <div class="pb-5 pt-1 text-zinc-200 text-[13px] leading-relaxed">The setup integrates smoothly with any brokerage framework running standardized MetaTrader platforms with ultra-low latency configurations enabled.</div>
+            </details>
+        </div>
+        <div class="text-center mt-8">
+            <p class="text-[16px] text-zinc-200">Not Satisfied?
+                <div class="mt-2">
+                    <a href="https://whatsapp.com/channel/0029Vb7OzbL2v1J1Q1EoKS2H"><button class="border border-[#a86001] text-white text-sm font-semibold px-10 py-1 rounded-full hover:bg-white/5 transition">Chat with Support</button></a>
+                </div>
+            </p>
+        </div>
+    </section>
+
+    <style>details summary::-webkit-details-marker { display: none; }</style>
+
+    <section class="bg-[#40403d92] max-w-3xl mx-auto px-6 py-6 rounded-2xl text-center border-t border-white/5">
+        <div class="bg-transparent p-8 md:p-12">
+            <h2 class="text-2xl sm:text-3xl font-black mb-2 text-white">Let the System Trade.</h2>
+            <p class="text-sm text-white mb-8 max-w-xs mx-auto leading-relaxed">You focus on results, not execution.</p>
+            <a href="#access"><button class="bg-brandGold hover:bg-amber-500 text-black text-xs font-bold px-8 py-1 rounded-full transition shadow-md tracking-wider uppercase mb-10">Get Started Today</button></a>
+            <div class="flex flex-col sm:flex-row gap-2 justify-center max-w-sm mx-auto">
+                <input type="email" id="newsletterEmail" placeholder="Enter your email" class="bg-black border border-white/10 rounded-full px-3.5 py-1 text-xs text-white placeholder-brandMuted focus:outline-none focus:border-brandGold w-full transition opacity-30">
+                <button onclick="subscribeNewsletter()" class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs px-5 py-1 rounded-full shrink-0 transition">Submit</button>
+            </div>
+            <div class="m-2 text-[13px]">
+                <span>Join 5000 traders receiving weekly</span> <span class="text-brandGold">updates</span> <span>and early access.</span>
+            </div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] px-6 text-brandMuted">
+            <a href="#" class="hover:text-white transition flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400 inline-block"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></a>
+            <a href="#" class="hover:text-white transition flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-200 inline-block"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg></a>
+            <a href="#" class="hover:text-white transition flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-400 inline-block"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg></a>
+        </div>
+    </section>
+
+    <footer class="bg-black text-[11px] text-zinc-400 py-10 border-t border-white/5">
+        <div class="max-w-3xl mx-auto leading-relaxed">
+            <p>Bullion Algo Systems provides automated trading software designed to assist with trade execution on supported platforms, including MT4 and MT5. The information and services offered are for educational and informational purposes only and do not constitute financial, investment, or trading advice. Trading in financial markets, including forex and commodities, involves a high level of risk and may not be suitable for all investors. There is no guarantee of profits, and users may experience partial or total loss of capital. Past performance, whether presented through MyFXBook or any other platform, is not indicative of future results. By using Bullion Algo Systems, you acknowledge that all trading decisions and outcomes remain your sole responsibility. The software operates based on pre-defined algorithms and does not account for individual financial situations, risk tolerance, or market anomalies. Bullion Algo Systems does not manage funds directly and does not have access to user trading accounts beyond the permissions granted by the user's trading platform. Users are advised to fully understand the risks involved and seek independent financial advice if necessary before engaging in live trading. Use of this software constitutes acceptance of these terms and an understanding of the inherent risks involved in automated trading.</p>
+            <p class="text-zinc-200 font-big pt-2">© 2026 Bullion Algo Systems. All Legal Frameworks Adhered.</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>lucide.createIcons();</script>
+
+    <script>
+        // Mobile sidebar
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const isHidden = sidebar.classList.contains('translate-x-full');
+            if (isHidden) {
+                sidebar.classList.remove('translate-x-full', 'pointer-events-none');
+                backdrop.classList.remove('opacity-0');
+                backdrop.classList.add('opacity-100');
+                document.body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.add('translate-x-full', 'pointer-events-none');
+                backdrop.classList.remove('opacity-100');
+                backdrop.classList.add('opacity-0');
+                document.body.style.overflow = '';
+            }
+        }
+    </script>
+
+    <script>
+        // Plan prices and labels
+        const plans = {
+            monthly:  { price: '$35.00',  period: '/ mo', plan: 'premium_monthly',    label: 'Bullion Algo <span class="text-brandGold">monthly subscription</span>' },
+            semi:     { price: '$200.00', period: '/ 6mo', plan: 'premium_semi_annual', label: 'Bullion Algo <span class="text-brandGold">semi-annual subscription</span>' },
+            yearly:   { price: '$360.00', period: '/ yr', plan: 'premium_yearly',      label: 'Bullion Algo <span class="text-brandGold">yearly subscription</span>' }
+        };
+
+        let currentPlan = 'monthly';
+
+        function selectPlan(plan) {
+            currentPlan = plan;
+
+            // Update tab styles
+            ['monthly', 'semi', 'yearly'].forEach(p => {
+                document.getElementById(`tab-${p}`).classList.remove('active');
+            });
+            document.getElementById(`tab-${plan}`).classList.add('active');
+
+            // Update card price
+            document.getElementById('premium-price').textContent = plans[plan].price;
+            document.getElementById('premium-period').textContent = plans[plan].period;
+
+            // Update modal price
+            document.getElementById('modal-price').textContent = plans[plan].price;
+            document.getElementById('modal-label').innerHTML = plans[plan].label;
+        }
+    </script>
+
+    <script>
+        // Payment form submission
+        document.getElementById('payment-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+            const planData = plans[currentPlan];
+
+            if (paymentMethod === 'flutterwave') {
+                try {
+                    const res = await fetch('http://localhost:3000/payments/subscribe', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ plan: planData.plan })
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        window.location.href = data.payment_url;
+                    } else if (res.status === 401) {
+                        alert('Please log in first before subscribing.');
+                        window.location.href = 'http://localhost:3000/auth/google';
+                    } else {
+                        alert(data.error || 'Something went wrong. Please try again.');
+                    }
+                } catch (err) {
+                    alert('Could not connect to server. Make sure you are logged in.');
+                }
+
+            } else if (paymentMethod === 'crypto') {
+                // 🔗 REPLACE THIS URL WITH YOUR REAL GOOGLE FORM LINK
+                window.open('https://forms.gle/psW35SPvCFAR6u8d7', '_blank');
+            }
+        });
+    </script>
+
+    <script>
+        // Newsletter
+        async function subscribeNewsletter() {
+            const email = document.getElementById('newsletterEmail').value;
+            if (!email) { alert('Please enter your email.'); return; }
+            try {
+                const res = await fetch('http://localhost:3000/newsletter/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (data.success) { alert('You\'re on the list! 🎉'); document.getElementById('newsletterEmail').value = ''; }
+                else { alert(data.error || 'Something went wrong.'); }
+            } catch (err) { alert('Could not connect to server.'); }
+        }
+    </script>
+
+    <script>
+        // Scroll reveal
+        const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => { entry.target.classList.add('visible'); }, index * 80);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        revealElements.forEach(el => observer.observe(el));
+    </script>
+
+</body>
+</html>
