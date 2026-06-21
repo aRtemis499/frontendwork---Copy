@@ -124,7 +124,7 @@
                     </div>
 
                 </div>
-                <a id="admin-link" href="http://localhost:3000/admindashboard.html" style="display:none" class="text-[11px] font-medium text-brandGold flex items-center gap-1.5 transition ml-2">
+                <a id="admin-link" href="https://my-project-gq9n.onrender.com/admindashboard.html" style="display:none" class="text-[11px] font-medium text-brandGold flex items-center gap-1.5 transition ml-2">
                  <i data-lucide="shield" class="w-3.5 h-3.5"></i> Admin
                 </a>
                 <button onclick="document.getElementById('logout-modal').showModal()" 
@@ -148,7 +148,7 @@
                             Back
                         </button>
 
-                        <a href="http://localhost:3000/auth/logout" 
+                        <a href="https://my-project-gq9n.onrender.com/auth/logout" 
                         class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
                             Confirm
                         </a>
@@ -676,14 +676,14 @@
 
     async function loadDashboard() {
         try {
-            const res = await fetch('http://localhost:3000/auth/me', {
+            const res = await fetch('https://my-project-gq9n.onrender.com/auth/me', {
                 credentials: 'include'
             });
             const data = await res.json();
 
             if (!data.loggedIn) {
                 console.log('Not logged in:', data);
-                window.location.href = 'http://localhost:3000/index.html';
+                window.location.href = 'https://my-project-gq9n.onrender.com/index.html';
                 return;
             }
 
@@ -694,7 +694,7 @@
                 document.getElementById('admin-link').style.display = 'flex';
             }
 
-            const mt5Res = await fetch('http://localhost:3000/mt5/status', {
+            const mt5Res = await fetch('https://my-project-gq9n.onrender.com/mt5/status', {
                 credentials: 'include'
             });
             const mt5Data = await mt5Res.json();
@@ -738,7 +738,7 @@
                 updateChartScale(0);
 
                 // Fetch live MetaApi data
-                const liveRes = await fetch('http://localhost:3000/mt5/live-data', { credentials: 'include' });
+                const liveRes = await fetch('https://my-project-gq9n.onrender.com/mt5/live-data', { credentials: 'include' });
                 const liveData = await liveRes.json();
 
                 if (liveData.connected) {
@@ -783,7 +783,7 @@
         const investor_password = document.getElementById('mt5InvestorPassword').value;
 
         try {
-            const res = await fetch('http://localhost:3000/mt5/connect', {
+            const res = await fetch('https://my-project-gq9n.onrender.com/mt5/connect', {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },

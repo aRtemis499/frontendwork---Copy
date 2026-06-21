@@ -95,7 +95,7 @@
                     <a href="#access" class="btn-pulse bg-brandGold hover:bg-amber-500 text-black font-bold text-xs w-36 py-2 rounded-full transition block text-center shadow-lg shadow-brandGold/10">Get Access</a>
                 </div>
                 <div class="relative inline-block p-[1px] rounded-full bg-gradient-to-r from-[#c57d03] to-[#ff9900]">
-                    <a href="http://localhost:3000/auth/google" class="bg-[#050505] hover:bg-white/5 text-white font-bold text-xs w-32 py-2 rounded-full transition block text-center">Log In</a>
+                    <a href="https://my-project-gq9n.onrender.com/auth/google" class="bg-[#050505] hover:bg-white/5 text-white font-bold text-xs w-32 py-2 rounded-full transition block text-center">Log In</a>
                 </div>
             </div>
             <button onclick="toggleMobileSidebar()" class="md:hidden flex items-center justify-center p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white focus:outline-none" aria-label="Toggle Menu">
@@ -128,7 +128,7 @@
                         <a onclick="toggleMobileSidebar()" href="#pricing" class="bg-brandGold text-black font-bold text-xs py-3 rounded-full transition block text-center w-full">Get Access Now</a>
                     </div>
                     <div class="relative w-full p-[1px] rounded-full bg-gradient-to-r from-[#c57d03] to-[#ff9900]">
-                        <a onclick="toggleMobileSidebar()" href="http://localhost:3000/auth/google" class="bg-[#0c0c0e] text-white font-bold text-xs py-3 rounded-full transition block text-center w-full">Log In</a>
+                        <a onclick="toggleMobileSidebar()" href="https://my-project-gq9n.onrender.com/auth/google" class="bg-[#0c0c0e] text-white font-bold text-xs py-3 rounded-full transition block text-center w-full">Log In</a>
                     </div>
                 </div>
             </div>
@@ -559,7 +559,7 @@
 
             if (paymentMethod === 'flutterwave') {
                 try {
-                    const res = await fetch('http://localhost:3000/payments/subscribe', {
+                    const res = await fetch('https://my-project-gq9n.onrender.com/payments/subscribe', {
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
@@ -572,7 +572,7 @@
                         window.location.href = data.payment_url;
                     } else if (res.status === 401) {
                         alert('Please log in first before subscribing.');
-                        window.location.href = 'http://localhost:3000/auth/google';
+                        window.location.href = 'https://my-project-gq9n.onrender.com/auth/google';
                     } else {
                         alert(data.error || 'Something went wrong. Please try again.');
                     }
@@ -593,7 +593,7 @@
             const email = document.getElementById('newsletterEmail').value;
             if (!email) { alert('Please enter your email.'); return; }
             try {
-                const res = await fetch('http://localhost:3000/newsletter/subscribe', {
+                const res = await fetch('https://my-project-gq9n.onrender.com/newsletter/subscribe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })

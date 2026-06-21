@@ -151,7 +151,7 @@
 
         async function loadUsers() {
             try {
-                const res = await fetch('http://localhost:3000/admin/mt5-accounts', { credentials: 'include' });
+                const res = await fetch('https://my-project-gq9n.onrender.com/admin/mt5-accounts', { credentials: 'include' });
                 const data = await res.json();
                 allAccounts = data.accounts || [];
                 filteredAccounts = allAccounts;
@@ -258,7 +258,7 @@
             if (!selectedAccountId) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/admin/mt5-accounts/${selectedAccountId}`, {
+                const res = await fetch(`https://my-project-gq9n.onrender.com/admin/mt5-accounts/${selectedAccountId}`, {
                     method: 'PATCH',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },

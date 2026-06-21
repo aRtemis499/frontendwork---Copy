@@ -112,7 +112,7 @@
                                 class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
                             Back
                         </button>
-                        <a href="http://localhost:3000/auth/logout" 
+                        <a href="https://my-project-gq9n.onrender.com/auth/logout" 
                            class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
                             Confirm
                         </a>
@@ -385,16 +385,16 @@
     <script>
         async function checkAdmin() {
             try {
-                const res = await fetch('http://localhost:3000/auth/me', { credentials: 'include' });
+                const res = await fetch('https://my-project-gq9n.onrender.com/auth/me', { credentials: 'include' });
                 const data = await res.json();
 
-                if (!data.loggedIn) { window.location.href = 'http://localhost:3000/index.html'; return; }
-                if (data.user.role !== 'admin') { window.location.href = 'http://localhost:3000/userdashboard.html'; return; }
+                if (!data.loggedIn) { window.location.href = 'https://my-project-gq9n.onrender.com/index.html'; return; }
+                if (data.user.role !== 'admin') { window.location.href = 'https://my-project-gq9n.onrender.com/userdashboard.html'; return; }
 
                 document.getElementById('admin-name').textContent = `Welcome ${data.user.name}!`;
             } catch (err) {
                 console.error('Admin check failed:', err);
-                window.location.href = 'http://localhost:3000/index.html';
+                window.location.href = 'https://my-project-gq9n.onrender.com/index.html';
             }
         }
         checkAdmin();
@@ -404,7 +404,7 @@
     <script>
         async function loadAdmins() {
             try {
-                const res = await fetch('http://localhost:3000/admin/admins', { credentials: 'include' });
+                const res = await fetch('https://my-project-gq9n.onrender.com/admin/admins', { credentials: 'include' });
                 const data = await res.json();
                 const list = document.getElementById('admins-list');
 
@@ -458,7 +458,7 @@
             }
 
             try {
-                const res = await fetch('http://localhost:3000/admin/invite', {
+                const res = await fetch('https://my-project-gq9n.onrender.com/admin/invite', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -499,13 +499,13 @@
         async function loadAdminData() {
             try {
                 // Load stats
-                const statsRes = await fetch('http://localhost:3000/admin/stats', { credentials: 'include' });
+                const statsRes = await fetch('https://my-project-gq9n.onrender.com/admin/stats', { credentials: 'include' });
                 const statsData = await statsRes.json();
                 document.getElementById('total-users-count').textContent = statsData.totalUsers ?? '--';
                 document.getElementById('active-subs-count').textContent = statsData.activeSubscriptions ?? '--';
 
                 // Load MT5 accounts
-                const accountsRes = await fetch('http://localhost:3000/admin/mt5-accounts', { credentials: 'include' });
+                const accountsRes = await fetch('https://my-project-gq9n.onrender.com/admin/mt5-accounts', { credentials: 'include' });
                 const accountsData = await accountsRes.json();
                 allAccounts = accountsData.accounts || [];
 
@@ -590,7 +590,7 @@
             if (!selectedAccountId) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/admin/mt5-accounts/${selectedAccountId}`, {
+                const res = await fetch(`https://my-project-gq9n.onrender.com/admin/mt5-accounts/${selectedAccountId}`, {
                     method: 'PATCH',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
