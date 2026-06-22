@@ -260,6 +260,25 @@
         <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Access the Algo</h2>
         <p class="text-sm text-brand mb-8">Simple, transparent pricing. No hidden conditions.</p>
 
+        <!-- Guest form — shown when not logged in -->
+<div id="guest-form" style="display:none" class="space-y-3 mb-4">
+    <p class="text-xs text-zinc-400 text-center">Enter your details to continue</p>
+    <input id="guest-name" type="text" placeholder="Full name"
+           class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-500 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
+    <input id="guest-email" type="email" placeholder="Email address"
+           class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-500 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
+    <button type="button" onclick="proceedAsGuest()"
+            class="w-full bg-brandGold hover:bg-amber-500 text-black font-bold text-xs py-2 rounded-full transition">
+        Continue to Payment
+    </button>
+</div>
+
+<!-- Payment methods — shown when logged in or after guest details filled -->
+<div id="payment-method-section">
+    <h3 class="text-center text-xs font-semibold text-white mb-3">Select Payment Method</h3>
+    ... existing radio buttons and proceed button ...
+</div>
+
         <!-- 3-way plan selector -->
         <div class="flex items-center justify-center mb-12">
             <div class="flex bg-white/5 border border-white/10 rounded-full p-1 gap-1">
@@ -571,9 +590,10 @@
                     if (data.success) {
                         window.location.href = data.payment_url;
                     } else if (res.status === 401) {
-                        alert('Please log in first before subscribing.');
-                        window.location.href = 'https://my-project-gq9n.onrender.com/auth/google';
-                    } else {
+    // Show guest payment form instead of forcing login
+    document.getElementById('guest-form').style.display = 'block';
+    document.getElementById('payment-method-section').style.display = 'none';
+} else {
                         alert(data.error || 'Something went wrong. Please try again.');
                     }
                 } catch (err) {
@@ -618,6 +638,46 @@
         }, { threshold: 0.12 });
         revealElements.forEach(el => observer.observe(el));
     </script>
+
+    <script>
+async function proceedAsGuest() {
+    const name = document.getElementById('guest-name').value.trim();
+    const email = document.getElementById('guest-email').value.trim();
+    
+    if (!name || !email) {
+        alert('Please enter your name and email.');
+        return;
+    }
+
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+    const planData = plans[currentPlan];
+
+    if (paymentMethod === 'flutterwave') {
+        try {
+            const res = await fetch('https://my-project-gq9n.onrender.com/payments/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    plan: planData.plan,
+                    guest_name: name,
+                    guest_email: email
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = data.payment_url;
+            } else {
+                alert(data.error || 'Something went wrong.');
+            }
+        } catch (err) {
+            alert('Could not connect to server.');
+        }
+    } else if (paymentMethod === 'crypto') {
+        window.open('https://forms.gle/psW35SPvCFAR6u8d7', '_blank');
+    }
+}
+</script>
 
 </body>
 </html>
