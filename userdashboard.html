@@ -144,12 +144,12 @@
                         
                         <button onclick="document.getElementById('logout-modal').close()" 
                                 type="button"
-                                class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
+                                class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
                             Back
                         </button>
 
                         <a href="https://my-project-gq9n.onrender.com/auth/logout" 
-                        class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
+                        class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition-colors duration-200 shadow-md text-center cursor-pointer">
                             Confirm
                         </a>
                         
@@ -227,18 +227,9 @@
                         </div>
                     </div>
 
-                    <div id="chart-data-view" class="h-44 w-full relative chart-grid-mesh mt-2 flex items-end relative z-10 pointer-events-none">
-                        <div id="chart-y-axis" class="absolute left-0 top-0 bottom-0 flex flex-col gap-6 text-[10px] font-bold text-zinc-300 pb-2">
-                            <div id="y-label-4">$250,000</div>
-                            <div id="y-label-3">$200,000</div>
-                            <div id="y-label-2">$150,000</div>
-                            <div id="y-label-1">$100,000</div>
-                            <div id="y-label-0">$50,000</div>
-                        </div>
-                        <div class="absolute top-[67px] left-[62%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20 pointer-events-auto">
-                            <div class="bg-brandGreen text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-lg mb-1 opacity-70">$150,000.00</div>
-                        </div>
-                    </div>
+                    <div id="chart-data-view" class="h-44 w-full relative chart-grid-mesh mt-2 flex items-end relative z-10">
+    <svg id="balance-chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible"></svg>
+</div>
 
                     <div id="chart-empty-view" style="display:none" class="h-44 w-full flex flex-col items-center justify-center gap-3 relative z-10">
                         <div style="width:80px;height:80px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
@@ -248,15 +239,7 @@
                         <span class="text-xs text-zinc-500">No data available</span>
                     </div>
 
-                    <div id="chart-labels" class="flex justify-between items-center text-[11px] font-bold text-zinc-300 px-10 relative z-20 mt-2">
-                        <span>Jan</span>
-                        <span>Feb</span>
-                        <span>Mar</span>
-                        <span>Apr</span>
-                        <span>May</span>
-                        <span>June</span>
-                    </div>
-                </div>
+                    <div id="chart-labels" class="flex justify-between items-center text-[11px] font-bold text-zinc-300 px-2 relative z-20 mt-2"></div>
 
                 <!-- 3. Sidebar remains md:col-span-1 automatically -->
                 <div class="md:col-span-1 flex flex-col gap-4">
@@ -749,6 +732,7 @@
                     document.getElementById('floating-pnl').textContent = `$${(liveData.equity - liveData.balance).toLocaleString()}`;
 
                     renderPositions(liveData.positions);
+                    initChart(liveData.history, liveData.balance);
                     renderCalendarPnl(liveData.history);
 
                     document.getElementById('chart-data-view').style.display = 'flex';
@@ -818,6 +802,126 @@
         }, 500);
     }
     </script>
+
+    <script>
+async function fetchGoldPrice() {
+    try {
+        const res = await fetch('https://api.metals.live/v1/spot/gold');
+        const data = await res.json();
+        const price = data[0]?.price;
+        if (!price) throw new Error('No price');
+        document.getElementById('xauusd-price').textContent = `$${price.toFixed(2)}`;
+    } catch (err) {
+        document.getElementById('xauusd-price').textContent = '--';
+    }
+}
+fetchGoldPrice();
+setInterval(fetchGoldPrice, 30000);
+</script>
+
+<script>
+let _chartHistory = [];
+let _chartBalance = 0;
+
+function buildChartData(history, currentBalance, days) {
+    const dailyPnl = {};
+    history.forEach(order => {
+        if (!order.doneTime || order.profit === undefined) return;
+        const day = new Date(order.doneTime).toISOString().split('T')[0];
+        dailyPnl[day] = (dailyPnl[day] || 0) + order.profit;
+    });
+
+    const points = [];
+    let running = currentBalance;
+    for (let i = 0; i < days; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        points.unshift({ date: key, balance: running });
+        running -= (dailyPnl[key] || 0);
+    }
+    return points;
+}
+
+function renderLineChart(points) {
+    const svg = document.getElementById('balance-chart-svg');
+    const labels = document.getElementById('chart-labels');
+    if (!svg || !points.length) return;
+
+    const W = svg.parentElement.clientWidth || 600;
+    const H = 160;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    const balances = points.map(p => p.balance);
+    const minB = Math.min(...balances) * 0.995;
+    const maxB = Math.max(...balances) * 1.005;
+    const range = maxB - minB || 1;
+
+    const toX = i => (i / (points.length - 1)) * W;
+    const toY = b => H - ((b - minB) / range) * H;
+
+    // Build path
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.balance).toFixed(1)}`).join(' ');
+
+    // Fill under line
+    const fillD = `${pathD} L${toX(points.length - 1)},${H} L0,${H} Z`;
+
+    svg.innerHTML = `
+        <defs>
+            <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#EAA83A" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#EAA83A" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        <path d="${fillD}" fill="url(#chartFill)"/>
+        <path d="${pathD}" fill="none" stroke="#EAA83A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${points.map((p, i) => {
+            const x = toX(i).toFixed(1);
+            const y = toY(p.balance).toFixed(1);
+            const isLast = i === points.length - 1;
+            if (!isLast) return '';
+            return `
+                <circle cx="${x}" cy="${y}" r="4" fill="#EAA83A"/>
+                <rect x="${parseFloat(x) - 40}" y="${parseFloat(y) - 22}" width="80" height="18" rx="5" fill="#25C06D" opacity="0.9"/>
+                <text x="${x}" y="${parseFloat(y) - 9}" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$${p.balance.toLocaleString()}</text>
+            `;
+        }).join('')}
+    `;
+
+    // Labels
+    const step = Math.ceil(points.length / 6);
+    const labelPoints = points.filter((_, i) => i % step === 0 || i === points.length - 1);
+    labels.innerHTML = labelPoints.map(p => {
+        const d = new Date(p.date);
+        return `<span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>`;
+    }).join('');
+}
+
+// Hook into the existing selectPlan-style tab system for chart range
+const _origSelectRange = window.selectChartRange;
+window._chartRange = 7;
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#dropdown-menu button[data-view]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.getAttribute('data-view');
+            window._chartRange = view === '7days' ? 7 : 30;
+            if (_chartHistory.length) {
+                const points = buildChartData(_chartHistory, _chartBalance, window._chartRange);
+                renderLineChart(points);
+            }
+        });
+    });
+});
+
+// Called after liveData is loaded in loadDashboard
+function initChart(history, balance) {
+    _chartHistory = history;
+    _chartBalance = balance;
+    const points = buildChartData(history, balance, window._chartRange || 7);
+    renderLineChart(points);
+}
+</script>
 
 </body>
 </html>

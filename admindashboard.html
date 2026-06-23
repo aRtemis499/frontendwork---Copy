@@ -400,15 +400,6 @@
                 document.getElementById('total-users-count').textContent = statsData.totalUsers ?? '--';
                 document.getElementById('active-subs-count').textContent = statsData.activeSubscriptions ?? '--';
 
-                // These aggregate across all connected MT5 accounts via MetaApi
-                // For now showing pending/connected counts from our DB as proxies
-                document.getElementById('admin-total-trades').textContent = statsData.connectedMt5 ?? '--';
-                document.getElementById('admin-floating-pnl').textContent = '--';
-                document.getElementById('admin-win-rate').textContent = '--';
-                document.getElementById('admin-total-asset').textContent = '--';
-                document.getElementById('admin-total-profit').textContent = '--';
-                document.getElementById('admin-asset-tooltip').textContent = '--';
-
                 // MT5 accounts
                 const accountsRes = await fetch('https://my-project-gq9n.onrender.com/admin/mt5-accounts', { credentials: 'include' });
                 const accountsData = await accountsRes.json();
@@ -503,6 +494,83 @@ async function fetchGoldPrice() {
 
 fetchGoldPrice();
 setInterval(fetchGoldPrice, 30000);
+</script>
+
+<script>
+async function loadAdminChart() {
+    try {
+        const res = await fetch('https://my-project-gq9n.onrender.com/admin/live-summary', { credentials: 'include' });
+        const data = await res.json();
+
+        if (data.totalBalance) {
+            document.getElementById('admin-total-asset').textContent = `$${data.totalBalance.toLocaleString()}`;
+            document.getElementById('admin-total-profit').textContent = `$${data.totalProfit.toLocaleString()}`;
+            document.getElementById('admin-asset-tooltip').textContent = `$${data.totalBalance.toLocaleString()}`;
+        }
+
+        if (data.dailyData && data.dailyData.length) {
+            renderAdminChart(data.dailyData);
+        }
+    } catch (err) {
+        console.error('Admin chart error:', err);
+    }
+}
+
+function renderAdminChart(points) {
+    const container = document.querySelector('.h-44.w-full.relative.chart-grid-mesh');
+    if (!container) return;
+
+    container.innerHTML = `<svg id="admin-chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible"></svg>`;
+    const svg = document.getElementById('admin-chart-svg');
+    const labels = document.getElementById('chart-labels');
+
+    const W = container.clientWidth || 600;
+    const H = 160;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    const balances = points.map(p => p.balance);
+    const minB = Math.min(...balances) * 0.995;
+    const maxB = Math.max(...balances) * 1.005;
+    const range = maxB - minB || 1;
+
+    const toX = i => (i / (points.length - 1)) * W;
+    const toY = b => H - ((b - minB) / range) * H;
+
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.balance).toFixed(1)}`).join(' ');
+    const fillD = `${pathD} L${toX(points.length - 1)},${H} L0,${H} Z`;
+
+    svg.innerHTML = `
+        <defs>
+            <linearGradient id="adminChartFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#EAA83A" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#EAA83A" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        <path d="${fillD}" fill="url(#adminChartFill)"/>
+        <path d="${pathD}" fill="none" stroke="#EAA83A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${points.map((p, i) => {
+            if (i !== points.length - 1) return '';
+            const x = toX(i).toFixed(1);
+            const y = toY(p.balance).toFixed(1);
+            return `
+                <circle cx="${x}" cy="${y}" r="4" fill="#EAA83A"/>
+                <rect x="${parseFloat(x) - 50}" y="${parseFloat(y) - 22}" width="100" height="18" rx="5" fill="#25C06D" opacity="0.9"/>
+                <text x="${x}" y="${parseFloat(y) - 9}" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$${p.balance.toLocaleString()}</text>
+            `;
+        }).join('')}
+    `;
+
+    // Labels — show 6 evenly spaced dates
+    const step = Math.ceil(points.length / 6);
+    labels.innerHTML = points
+        .filter((_, i) => i % step === 0 || i === points.length - 1)
+        .map(p => {
+            const d = new Date(p.date);
+            return `<span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>`;
+        }).join('');
+}
+
+loadAdminChart();
 </script>
 
 </body>
