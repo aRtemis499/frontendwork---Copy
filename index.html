@@ -717,7 +717,7 @@
 <!-- ═══ NAV ═══ -->
 <nav>
   <a class="nav-logo" href="#">
-    <div class="logo-mark">B</div>
+    <img src="assets/logo-colored.svg" alt="Bullion Algo Logo" style="width:38px;height:38px;object-fit:contain;">
     <span class="logo-text">Bullion <span>Algo</span></span>
   </a>
   <div class="nav-links">
@@ -727,8 +727,8 @@
     <a href="#faq">FAQ</a>
   </div>
   <div class="nav-actions">
-    <a href="https://my-project-gq9n.onrender.com/auth/google" class="btn-nav-outline">Log In</a>
-    <a href="#pricing" class="btn-nav-gold">Get Access</a>
+    <a href="https://my-project-gq9n.onrender.com/auth/google" class="btn-nav-outline">Sign In</a>
+    <a href="https://app.duplikium.com/register" target="_blank" class="btn-nav-gold">Open Account</a>
   </div>
   <button class="nav-hamburger" onclick="openDrawer()" aria-label="Open menu">
     <span></span><span></span><span></span>
@@ -747,8 +747,8 @@
       <a href="#faq" onclick="closeDrawer()">FAQ</a>
     </div>
     <div class="drawer-actions">
-      <a href="https://my-project-gq9n.onrender.com/auth/google" class="btn-drawer-outline">Log In</a>
-      <a href="#pricing" class="btn-drawer-gold" onclick="closeDrawer()">Get Access</a>
+      <a href="https://my-project-gq9n.onrender.com/auth/google" class="btn-drawer-outline">Sign In</a>
+      <a href="https://app.duplikium.com/register" target="_blank" class="btn-drawer-gold" onclick="closeDrawer()">Open Account</a>
     </div>
   </div>
 </div>
@@ -770,7 +770,7 @@
       Automate retail algorithms into operational logic models designed to capture XAUUSD infrastructure trends and secure consistent returns.
     </p>
     <div class="hero-actions">
-      <a href="#pricing" class="btn-gold">Get Access</a>
+      <a href="https://app.duplikium.com/register" target="_blank" class="btn-gold">Open Account</a>
       <a href="#performance" class="btn-outline">View Performance</a>
     </div>
 
@@ -882,26 +882,32 @@
 <!-- ═══ HOW IT WORKS ═══ -->
 <section class="section" id="how-it-works">
   <span class="section-eyebrow">// Process</span>
-  <h2 class="section-title" style="text-align:center;">Three Steps to<br><em style="font-style:italic; color:var(--gold);">Automated Capital Growth</em></h2>
+  <h2 class="section-title" style="text-align:center;">Four Steps to<br><em style="font-style:italic; color:var(--gold);">Automated Capital Growth</em></h2>
   <p class="section-sub" style="margin: 0 auto 64px; text-align:center;">From signup to live execution in under 24 hours.</p>
-  <div class="how-grid reveal">
-    <div class="how-card">
+  <div class="how-grid reveal" style="grid-template-columns: repeat(4,1fr);">
+    <div class="how-card" style="border-radius:14px 0 0 14px;">
       <span class="how-step">Step 01</span>
-      <div class="how-icon">🔐</div>
-      <h3>Subscribe to a Plan</h3>
-      <p>Choose a subscription tier that fits your horizon. Access is granted instantly after payment confirmation via Flutterwave.</p>
+      <div class="how-icon">🏦</div>
+      <h3>Open an Account</h3>
+      <p>Register a live broker account with Exness. An MT5 account is required to connect to the copy-trade feed.</p>
     </div>
     <div class="how-card">
       <span class="how-step">Step 02</span>
-      <div class="how-icon">🔗</div>
-      <h3>Connect Your MT5 Account</h3>
-      <p>Open a broker account and link it to your dashboard via MetaApi. The system reads your live balance, equity, and trade history in real time.</p>
+      <div class="how-icon">🔐</div>
+      <h3>Subscribe to the Bot</h3>
+      <p>Choose a subscription plan. Access is granted instantly after payment confirmation via Flutterwave or crypto.</p>
     </div>
     <div class="how-card">
       <span class="how-step">Step 03</span>
+      <div class="how-icon">🔗</div>
+      <h3>Connect Your Account</h3>
+      <p>Link your MT5 account to your BAS dashboard. Your live balance, equity, and trade history sync in real time.</p>
+    </div>
+    <div class="how-card" style="border-radius:0 14px 14px 0;">
+      <span class="how-step">Step 04</span>
       <div class="how-icon">⚡</div>
       <h3>Activate the Algorithm</h3>
-      <p>Your account is connected to the master copy-trade feed. The algorithm executes XAUUSD trades automatically, 24/7, without any manual input.</p>
+      <p>Your account is slaved to the master copy-trade feed. The algorithm executes XAUUSD trades automatically, 24/7.</p>
     </div>
   </div>
 </section>
