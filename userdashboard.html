@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* ── DESIGN TOKENS (matches index.html) ── */
     :root {
@@ -235,28 +236,14 @@
     }
     .range-tab.active { background: var(--bg4); color: var(--gold); border: 1px solid var(--border); }
 
-    /* SVG chart area */
-    .chart-svg-wrap {
-      position: relative; height: 200px; width: 100%;
+    /* Chart.js canvas area */
+    .chart-canvas-wrap {
+      position: relative; height: 220px; width: 100%;
     }
-    .chart-grid {
-      position: absolute; inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-      background-size: 80px 40px;
-      border-radius: 4px;
-    }
-    #balance-chart-svg { width: 100%; height: 100%; overflow: visible; }
-    .chart-labels {
-      display: flex; justify-content: space-between;
-      margin-top: 10px;
-      font-family: 'DM Mono', monospace; font-size: 0.6rem;
-      color: var(--text-muted);
-    }
+    #balance-chart { width: 100% !important; height: 100% !important; }
     .chart-empty {
       display: none; flex-direction: column; align-items: center;
-      justify-content: center; gap: 12px; height: 200px;
+      justify-content: center; gap: 12px; height: 220px;
       color: var(--text-muted); font-size: 0.82rem;
     }
     .chart-empty-icon {
@@ -622,16 +609,14 @@
         </div>
       </div>
 
-      <!-- SVG chart -->
-      <div class="chart-svg-wrap" id="chart-data-view">
-        <div class="chart-grid"></div>
-        <svg id="balance-chart-svg" width="100%" height="100%" preserveAspectRatio="none"></svg>
+      <!-- Chart.js canvas -->
+      <div class="chart-canvas-wrap" id="chart-data-view">
+        <canvas id="balance-chart"></canvas>
       </div>
       <div class="chart-empty" id="chart-empty-view">
         <div class="chart-empty-icon">📈</div>
         <span>No chart data available yet</span>
       </div>
-      <div class="chart-labels" id="chart-labels"></div>
     </div>
 
     <!-- ── STATS ROW (4 cards) ── -->
@@ -850,17 +835,18 @@
   }
 </script>
 
-<!-- Chart -->
+<!-- Chart.js -->
 <script>
   let _chartHistory = [];
   let _chartBalance = 0;
   let _chartRange   = 7;
+  let _chartInstance = null;
 
   function setChartRange(days) {
     _chartRange = days;
     document.getElementById('tab-7').classList.toggle('active', days === 7);
     document.getElementById('tab-30').classList.toggle('active', days === 30);
-    if (_chartHistory.length) renderLineChart(buildChartData(_chartHistory, _chartBalance, days));
+    if (_chartHistory.length) renderChart(buildChartData(_chartHistory, _chartBalance, days));
   }
 
   function buildChartData(history, currentBalance, days) {
@@ -882,71 +868,108 @@
     return points;
   }
 
-  function renderLineChart(points) {
-    const svg    = document.getElementById('balance-chart-svg');
-    const labels = document.getElementById('chart-labels');
-    if (!svg || !points.length) return;
+  function renderChart(points) {
+    const canvas = document.getElementById('balance-chart');
+    if (!canvas || !points.length) return;
+    const ctx = canvas.getContext('2d');
 
-    const W = svg.parentElement.clientWidth  || 700;
-    const H = svg.parentElement.clientHeight || 200;
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    // Gold gradient fill
+    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0,   'rgba(201,168,76,0.28)');
+    gradient.addColorStop(0.6, 'rgba(201,168,76,0.06)');
+    gradient.addColorStop(1,   'rgba(201,168,76,0)');
 
+    const labels   = points.map(p => {
+      const d = new Date(p.date);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
     const balances = points.map(p => p.balance);
-    const minB = Math.min(...balances) * 0.995;
-    const maxB = Math.max(...balances) * 1.005;
-    const range = maxB - minB || 1;
 
-    const toX = i => (i / Math.max(points.length - 1, 1)) * W;
-    const toY = b => H - ((b - minB) / range) * (H * 0.88);
+    if (_chartInstance) _chartInstance.destroy();
 
-    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.balance).toFixed(1)}`).join(' ');
-    const fillD = `${pathD} L${toX(points.length - 1)},${H} L0,${H} Z`;
-
-    const lastX   = toX(points.length - 1).toFixed(1);
-    const lastY   = toY(points[points.length - 1].balance).toFixed(1);
-    const lastVal = points[points.length - 1].balance;
-    const tipW    = 96;
-    const tipX    = Math.min(parseFloat(lastX) - tipW / 2, W - tipW - 4);
-
-    svg.innerHTML = `
-      <defs>
-        <linearGradient id="cFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stop-color="#C9A84C" stop-opacity="0.22"/>
-          <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="${fillD}" fill="url(#cFill)"/>
-      <path d="${pathD}" fill="none" stroke="#C9A84C" stroke-width="1.8"
-            stroke-linejoin="round" stroke-linecap="round"/>
-      <circle cx="${lastX}" cy="${lastY}" r="4" fill="#C9A84C"/>
-      <circle cx="${lastX}" cy="${lastY}" r="8" fill="#C9A84C" opacity="0.15"/>
-      <rect x="${tipX}" y="${parseFloat(lastY) - 26}" width="${tipW}" height="18"
-            rx="5" fill="#2ECC8A" opacity="0.9"/>
-      <text x="${parseFloat(tipX) + tipW / 2}" y="${parseFloat(lastY) - 13}"
-            text-anchor="middle" fill="#080B10" font-size="10" font-weight="700"
-            font-family="monospace">$${lastVal.toLocaleString()}</text>
-    `;
-
-    const step = Math.max(1, Math.ceil(points.length / 7));
-    labels.innerHTML = points
-      .filter((_, i) => i % step === 0 || i === points.length - 1)
-      .map(p => {
-        const d = new Date(p.date);
-        return `<span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>`;
-      }).join('');
+    _chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Balance',
+          data: balances,
+          borderColor: '#C9A84C',
+          borderWidth: 2,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#C9A84C',
+          pointBorderColor: '#080B10',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#E8C97A',
+          pointHoverBorderColor: '#080B10',
+          pointHoverBorderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#111620',
+            borderColor: 'rgba(201,168,76,0.25)',
+            borderWidth: 1,
+            titleColor: '#8A8275',
+            titleFont: { family: 'DM Mono', size: 11 },
+            bodyColor: '#C9A84C',
+            bodyFont: { family: 'DM Mono', size: 13, weight: '700' },
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+              title: items => items[0].label,
+              label: item => ` $${Number(item.raw).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+            ticks: {
+              color: '#4A4540',
+              font: { family: 'DM Mono', size: 10 },
+              maxTicksLimit: 7,
+              maxRotation: 0,
+            },
+            border: { display: false }
+          },
+          y: {
+            position: 'right',
+            grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+            ticks: {
+              color: '#4A4540',
+              font: { family: 'DM Mono', size: 10 },
+              callback: v => '$' + Number(v).toLocaleString()
+            },
+            border: { display: false }
+          }
+        }
+      }
+    });
   }
 
   function initChart(history, balance) {
     _chartHistory = history;
     _chartBalance = balance;
     const points = buildChartData(history, balance, _chartRange);
+    // Show empty state if there's no variation in balance (no history data)
     if (!points.some(p => p.balance !== balance)) {
       document.getElementById('chart-data-view').style.display = 'none';
       document.getElementById('chart-empty-view').style.display = 'flex';
     } else {
       document.getElementById('chart-data-view').style.display = 'block';
       document.getElementById('chart-empty-view').style.display = 'none';
-      renderLineChart(points);
+      renderChart(points);
     }
   }
 </script>
@@ -1087,14 +1110,21 @@
   function setHeaderActions(state) {
     // state: 'broker' | 'connect' | 'connected'
     const el = document.getElementById('header-actions');
-    
+    if (state === 'broker') {
+      el.innerHTML = `
+        <a href="https://one.exnessonelink.com/a/v630hqc0" target="_blank"
+           onclick="brokerClicked()" id="broker-btn">
+          <button class="btn-connect">Create Broker Account</button>
+        </a>`;
+    } else if (state === 'connect') {
       el.innerHTML = `<button class="btn-connect" onclick="openConnectModal()">Connect Bot →</button>`;
-    } if (state === 'connected') {
+    } else if (state === 'connected') {
       el.innerHTML = `
         <span class="badge-connected">
           <span class="badge-dot"></span> Bot Connected
         </span>`;
     }
+  }
 
   function brokerClicked() {
     if (_currentUserId) localStorage.setItem(`broker_clicked_${_currentUserId}`, 'true');
@@ -1128,13 +1158,16 @@
       const mt5Data = await mt5Res.json();
       const hasAccount    = !!mt5Data.account;
       const isConnected   = mt5Data.account?.status === 'connected';
-      
+      const brokerClicked = localStorage.getItem(`broker_clicked_${user.id}`);
+
       // Header action state
-if (hasAccount) {
-  setHeaderActions('connected');
-} else {
-  setHeaderActions('connect');
-}
+      if (hasAccount) {
+        setHeaderActions('connected');
+      } else if (brokerClicked) {
+        setHeaderActions('connect');
+      } else {
+        setHeaderActions('broker');
+      }
 
       // If not connected → show overlay, hide body
       if (!isConnected) {
