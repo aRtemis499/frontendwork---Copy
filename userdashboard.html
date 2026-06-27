@@ -1,790 +1,1256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard - Bullion Algo System</title>
-    <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dashBg: '#09090b',
-                        cardBg: '#121214',
-                        brandGold: '#EAA83A',
-                        brandGreen: '#25C06D',
-                        brandRed: '#E54B4B',
-                        brandMuted: '#7D7D82'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
-        body { font-family: 'Geist', sans-serif; background-color: #09090b; }
-        .chart-grid-mesh {
-            background-size: 40px 40px;
-            background-image:
-                linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
-        }
-        .radial-chart-glow {
-            background: radial-gradient(circle, rgba(37,192,109,0.12) 0%, rgba(0,0,0,0) 70%);
-        }
-        .range-tab { transition: all 0.2s ease; }
-        .range-tab.active { background: #EAA83A; color: #000; font-weight: 700; }
-        .range-tab:not(.active) { background: transparent; color: #7D7D82; }
-    </style>
-</head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
+  <title>Dashboard — Bullion Algo Systems</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── DESIGN TOKENS (matches index.html) ── */
+    :root {
+      --gold:        #C9A84C;
+      --gold-light:  #E8C97A;
+      --gold-dim:    #7A6020;
+      --gold-glow:   rgba(201,168,76,0.18);
+      --gold-glow2:  rgba(201,168,76,0.07);
+      --bg:          #080B10;
+      --bg2:         #0C1018;
+      --bg3:         #111620;
+      --bg4:         #161D2A;
+      --border:      rgba(201,168,76,0.18);
+      --border2:     rgba(201,168,76,0.07);
+      --text:        #E8E2D5;
+      --text-dim:    #8A8275;
+      --text-muted:  #4A4540;
+      --green:       #2ECC8A;
+      --red:         #E8524A;
+    }
 
-<!-- Load Screen -->
-<div id="loadScreen" class="fixed inset-0 z-[999] bg-[#050505] flex items-center justify-center">
-    <img id="loadLogo" src="assets/logo-colored.svg" alt="Bullion Algo"
-         class="w-16 h-16 object-contain" style="opacity:0;transition:opacity 0.6s ease;">
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Film grain */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.35;
+    }
+
+    /* ── LOAD SCREEN ── */
+    #load-screen {
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    #load-screen.fade { opacity: 0; pointer-events: none; }
+    .load-logo {
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .load-logo.visible { opacity: 1; transform: translateY(0); }
+    .load-logo img { width: 48px; height: 48px; object-fit: contain; }
+    .load-wordmark {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+    .load-wordmark span { color: var(--gold); }
+    .load-bar {
+      width: 120px; height: 1px;
+      background: var(--border2);
+      position: relative; overflow: hidden;
+    }
+    .load-bar::after {
+      content: ''; position: absolute; left: -50%; top: 0; bottom: 0;
+      width: 50%; background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      animation: loadSlide 1.2s ease infinite;
+    }
+    @keyframes loadSlide { from { left: -50%; } to { left: 150%; } }
+
+    /* ── TOP NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: linear-gradient(to bottom, rgba(8,11,16,0.98), transparent);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid var(--border2);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .logo-text { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; letter-spacing: 0.05em; color: var(--text); }
+    .logo-text span { color: var(--gold); }
+
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    .nav-user {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--gold-glow2); border: 1px solid var(--border);
+      border-radius: 100px; padding: 6px 16px 6px 8px;
+    }
+    .nav-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; color: var(--bg);
+    }
+    #nav-username { font-size: 0.78rem; color: var(--text-dim); }
+    .nav-sep { width: 1px; height: 18px; background: var(--border2); }
+
+    .btn-nav-gold {
+      background: linear-gradient(135deg, #C9A84C, #E8C97A);
+      border: none; color: var(--bg); padding: 8px 20px;
+      font-family: 'Outfit', sans-serif; font-size: 0.72rem;
+      font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      border-radius: 4px; cursor: pointer; transition: all 0.3s;
+      text-decoration: none; display: inline-block;
+    }
+    .btn-nav-gold:hover { box-shadow: 0 4px 18px rgba(201,168,76,0.3); transform: translateY(-1px); }
+
+    .btn-nav-ghost {
+      background: none; border: 1px solid var(--border2); color: var(--text-muted);
+      padding: 8px 18px; font-family: 'Outfit', sans-serif; font-size: 0.72rem;
+      letter-spacing: 0.1em; text-transform: uppercase; border-radius: 4px;
+      cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block;
+    }
+    .btn-nav-ghost:hover { border-color: var(--border); color: var(--text-dim); }
+
+    #admin-link {
+      display: none; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--gold); text-decoration: none; font-family: 'DM Mono', monospace;
+      border: 1px solid var(--border); padding: 6px 14px; border-radius: 4px;
+      transition: all 0.3s;
+    }
+    #admin-link:hover { background: var(--gold-glow); }
+
+    /* ── MAIN LAYOUT ── */
+    .dash-wrap {
+      max-width: 1100px; margin: 0 auto;
+      padding: 100px 48px 60px;
+    }
+
+    /* ── WELCOME BAR ── */
+    .welcome-bar {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 28px; gap: 16px; flex-wrap: wrap;
+    }
+    .welcome-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 300; color: var(--text); line-height: 1.1;
+    }
+    .welcome-title em { font-style: italic; color: var(--gold); }
+    .welcome-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-muted); margin-top: 6px;
+    }
+    .welcome-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    /* connect bot btn / connected badge / broker btn */
+    .btn-connect {
+      background: linear-gradient(135deg, #C9A84C, #E8C97A); color: var(--bg);
+      border: none; padding: 10px 22px; font-family: 'Outfit', sans-serif;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; border-radius: 4px; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-connect:hover { box-shadow: 0 4px 18px rgba(201,168,76,0.3); }
+    .badge-connected {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: 1px solid rgba(46,204,138,0.3); background: rgba(46,204,138,0.07);
+      padding: 7px 14px; border-radius: 4px;
+      font-family: 'DM Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--green);
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ── NOT CONNECTED OVERLAY ── */
+    .overlay-disconnected {
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 80px 24px; gap: 16px;
+      border: 1px solid var(--border2); border-radius: 18px;
+      background: var(--bg3); margin-top: 20px;
+    }
+    .overlay-disconnected h2 {
+      font-family: 'Cormorant Garamond', serif; font-size: 1.8rem;
+      font-weight: 400; color: var(--text); margin-bottom: 4px;
+    }
+    .overlay-disconnected p { font-size: 0.86rem; color: var(--text-muted); max-width: 340px; line-height: 1.65; }
+
+    /* ── DASHBOARD BODY ── */
+    #dashboard-body { display: none; }
+
+    /* ── CHART CARD (full width) ── */
+    .chart-card {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 18px; padding: 32px 36px 28px;
+      position: relative; overflow: hidden; margin-bottom: 16px;
+    }
+    .chart-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.5;
+    }
+    .chart-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 28px; gap: 16px; flex-wrap: wrap;
+    }
+    .chart-balance-label {
+      font-family: 'DM Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    #total-balance {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.2rem, 4vw, 3.2rem);
+      font-weight: 600; color: var(--gold); line-height: 1;
+    }
+    .chart-balance-sub {
+      font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;
+    }
+    .chart-range-tabs {
+      display: flex; background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 6px; padding: 3px; gap: 3px;
+    }
+    .range-tab {
+      padding: 7px 20px; border: none; background: none; border-radius: 4px;
+      font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
+      cursor: pointer; transition: all 0.25s;
+    }
+    .range-tab.active { background: var(--bg4); color: var(--gold); border: 1px solid var(--border); }
+
+    /* SVG chart area */
+    .chart-svg-wrap {
+      position: relative; height: 200px; width: 100%;
+    }
+    .chart-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 80px 40px;
+      border-radius: 4px;
+    }
+    #balance-chart-svg { width: 100%; height: 100%; overflow: visible; }
+    .chart-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 10px;
+      font-family: 'DM Mono', monospace; font-size: 0.6rem;
+      color: var(--text-muted);
+    }
+    .chart-empty {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 12px; height: 200px;
+      color: var(--text-muted); font-size: 0.82rem;
+    }
+    .chart-empty-icon {
+      width: 48px; height: 48px; border: 1px dashed var(--border);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; opacity: 0.5;
+    }
+
+    /* ── STAT CARDS ROW ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 12px; margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 14px; padding: 22px 24px; position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .stat-card:hover { border-color: var(--border); transform: translateY(-2px); }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .stat-card:hover::before { opacity: 0.6; }
+    .stat-card-label {
+      font-family: 'DM Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 14px; display: block;
+    }
+    .stat-card-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem; font-weight: 600; color: var(--gold);
+      line-height: 1; display: block;
+    }
+    .stat-card-value.green { color: var(--green); }
+    .stat-card-value.red   { color: var(--red); }
+    .stat-card-sub {
+      font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; display: block;
+    }
+
+    /* ── XAUUSD PRICE CARD ── */
+    .xauusd-card {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 14px; padding: 18px 20px; overflow: hidden;
+      position: relative;
+    }
+    .xauusd-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.4;
+    }
+    .xauusd-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .xauusd-pip {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); animation: pulse 2s ease infinite;
+    }
+    .xauusd-pair {
+      font-family: 'DM Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase;
+    }
+    /* TradingView widget container */
+    .tv-widget-wrap {
+      height: 52px; overflow: hidden; position: relative;
+    }
+    /* hide TradingView branding bar */
+    .tv-widget-wrap iframe { margin-bottom: -22px; }
+
+    /* ── TWO-COLUMN LOWER SECTION ── */
+    .lower-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 12px;
+    }
+
+    /* ── TABLE CARDS (positions / history) ── */
+    .table-card {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 14px; overflow: hidden;
+    }
+    .table-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border2);
+    }
+    .table-card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem; font-weight: 600; color: var(--text);
+    }
+    .table-count {
+      font-family: 'DM Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.14em; color: var(--text-muted);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 10px 16px; text-align: left;
+      font-family: 'DM Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted);
+      border-bottom: 1px solid var(--border2); font-weight: 400;
+    }
+    thead th:last-child { text-align: right; }
+    tbody tr {
+      border-bottom: 1px solid var(--border2); transition: background 0.2s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg4); }
+    tbody td {
+      padding: 11px 16px; font-size: 0.8rem;
+      font-family: 'DM Mono', monospace; color: var(--text-dim);
+    }
+    tbody td:last-child { text-align: right; }
+    .td-profit-pos { color: var(--green); font-weight: 500; }
+    .td-profit-neg { color: var(--red);   font-weight: 500; }
+    .td-gold { color: var(--gold); }
+    .dir-buy  { color: var(--green); font-size: 0.7rem; letter-spacing: 0.1em; }
+    .dir-sell { color: var(--red);   font-size: 0.7rem; letter-spacing: 0.1em; }
+
+    .table-empty {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; padding: 40px 24px;
+      color: var(--text-muted); font-size: 0.8rem;
+    }
+    .table-empty-icon {
+      width: 44px; height: 44px; border: 1px dashed var(--border);
+      border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 1.1rem; opacity: 0.5;
+    }
+
+    /* ── CALENDAR CARD ── */
+    .calendar-card {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 14px; padding: 24px; margin-bottom: 12px;
+    }
+    .calendar-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .calendar-month {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem; font-weight: 600; color: var(--text);
+    }
+    .calendar-nav {
+      display: flex; gap: 8px;
+    }
+    .cal-btn {
+      width: 28px; height: 28px; border: 1px solid var(--border2);
+      border-radius: 6px; background: none; color: var(--text-muted);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; transition: all 0.2s;
+    }
+    .cal-btn:hover { border-color: var(--border); color: var(--gold); }
+    .calendar-dow {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px; margin-bottom: 8px;
+    }
+    .cal-dow {
+      font-family: 'DM Mono', monospace; font-size: 0.55rem;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text-muted); text-align: center; padding: 4px 0;
+    }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-cell {
+      aspect-ratio: 1; border-radius: 8px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 4px; min-height: 44px;
+      font-family: 'DM Mono', monospace;
+    }
+    .cal-cell.other-month { background: transparent; }
+    .cal-cell.other-month .cal-day { color: var(--text-muted); opacity: 0.3; }
+    .cal-cell.current-month { background: var(--bg2); border: 1px solid var(--border2); }
+    .cal-cell.current-month:hover { border-color: var(--border); }
+    .cal-day { font-size: 0.65rem; color: var(--text-dim); }
+    .cal-pnl { font-size: 0.6rem; font-weight: 500; margin-top: 2px; }
+    .cal-pnl.pos { color: var(--green); }
+    .cal-pnl.neg { color: var(--red); }
+
+    /* ── MT5 CONNECT MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 20px; padding: 48px 44px;
+      max-width: 460px; width: 92%; position: relative;
+      transform: translateY(24px); transition: transform 0.35s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .modal-close {
+      position: absolute; top: 18px; right: 20px;
+      background: none; border: none; color: var(--text-muted);
+      font-size: 1.2rem; cursor: pointer; transition: color 0.2s; line-height: 1;
+    }
+    .modal-close:hover { color: var(--gold); }
+    .modal-eyebrow {
+      font-family: 'DM Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+    }
+    .modal-title {
+      font-family: 'Cormorant Garamond', serif; font-size: 1.8rem;
+      font-weight: 400; color: var(--text); margin-bottom: 28px;
+    }
+    .modal-divider { height: 1px; background: var(--border2); margin: 20px 0; }
+    .modal-label {
+      font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 8px; display: block;
+    }
+    .modal-input {
+      width: 100%; background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 12px 16px; color: var(--text);
+      font-family: 'Outfit', sans-serif; font-size: 0.86rem; margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { outline: none; border-color: var(--gold); }
+    .modal-input::placeholder { color: var(--text-muted); }
+    .btn-modal-submit {
+      width: 100%; padding: 14px; margin-top: 8px;
+      background: linear-gradient(135deg, #C9A84C, #E8C97A); color: var(--bg);
+      border: none; border-radius: 8px;
+      font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 0.13em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-modal-submit:hover { box-shadow: 0 6px 24px rgba(201,168,76,0.3); }
+
+    /* ── LOGOUT CONFIRM ── */
+    .logout-modal-overlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .logout-modal-overlay.open { opacity: 1; pointer-events: all; }
+    .logout-modal {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 16px; padding: 36px 40px; max-width: 380px; width: 92%;
+      text-align: center; transform: translateY(20px); transition: transform 0.3s;
+    }
+    .logout-modal-overlay.open .logout-modal { transform: translateY(0); }
+    .logout-modal p { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 28px; line-height: 1.6; }
+    .logout-modal-actions { display: flex; gap: 12px; justify-content: center; }
+    .btn-logout-cancel {
+      padding: 11px 28px; border: 1px solid var(--border); background: none;
+      color: var(--text-dim); border-radius: 6px; font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout-cancel:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-logout-confirm {
+      padding: 11px 28px; background: var(--red); border: none; color: #fff;
+      border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 0.78rem;
+      font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s;
+    }
+    .btn-logout-confirm:hover { opacity: 0.85; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 700;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 22px; max-width: 300px;
+      transform: translateY(16px); opacity: 0; transition: all 0.3s; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-title { font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .toast-msg   { font-size: 0.74rem; color: var(--text-dim); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border2); padding: 28px 48px;
+      max-width: 1100px; margin: 40px auto 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .footer-copy { font-size: 0.72rem; color: var(--text-muted); }
+    .footer-back { font-size: 0.72rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .footer-back:hover { color: var(--gold); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .dash-wrap { padding: 88px 20px 40px; }
+      .chart-card { padding: 24px 20px 20px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .lower-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; padding: 24px 20px; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .welcome-bar { flex-direction: column; align-items: flex-start; }
+      .nav-right .btn-nav-ghost { display: none; }
+      .calendar-card { display: none; } /* calendar hides on small mobile */
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ LOAD SCREEN ═══ -->
+<div id="load-screen">
+  <div class="load-logo" id="load-logo">
+    <img src="assets/logo-colored.svg" alt="Bullion Algo">
+    <div class="load-wordmark">Bullion <span>Algo</span></div>
+    <div class="load-bar"></div>
+  </div>
 </div>
 
-<body class="text-white antialiased min-h-screen p-4 md:p-8">
-<div class="max-w-3xl mx-auto">
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo-colored.svg" alt="" style="width:34px;height:34px;object-fit:contain;">
+    <span class="logo-text">Bullion <span>Algo</span></span>
+  </a>
+  <div class="nav-right">
+    <a id="admin-link" href="admindashboard.html">⬡ Admin</a>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">—</div>
+      <span id="nav-username">Loading…</span>
+    </div>
+    <div class="nav-sep"></div>
+    <button class="btn-nav-ghost" onclick="openLogoutModal()">Sign Out</button>
+  </div>
+</nav>
 
-    <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
-    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div class="mt-6 pt-3">
-            <h1 id="welcome-name" class="text-2xl font-bold tracking-tight">Welcome!</h1>
-            <p class="text-xs text-brandMuted">Here's an overview of your trading account</p>
+<!-- ═══ MAIN WRAP ═══ -->
+<div class="dash-wrap">
+
+  <!-- Welcome bar -->
+  <div class="welcome-bar">
+    <div>
+      <h1 class="welcome-title">Welcome back, <em id="welcome-name">Trader</em></h1>
+      <p class="welcome-sub">// Live overview of your trading account</p>
+    </div>
+    <div class="welcome-actions" id="header-actions">
+      <!-- Injected by JS: broker btn / connect bot btn / connected badge -->
+    </div>
+  </div>
+
+  <!-- Not connected state -->
+  <div class="overlay-disconnected" id="overlay-disconnected">
+    <h2>No Account Connected</h2>
+    <p>Connect your MT5 account to see live balance, positions, and trade history.</p>
+    <button class="btn-connect" style="margin-top:8px;" onclick="openConnectModal()">Connect Bot →</button>
+  </div>
+
+  <!-- Dashboard body (shown when connected) -->
+  <div id="dashboard-body">
+
+    <!-- ── CHART CARD (full width) ── -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-balance-label">// Account Balance</div>
+          <div id="total-balance">—</div>
+          <span class="chart-balance-sub" id="balance-sub">Live · synced via MetaApi</span>
         </div>
-
-        <div class="mb-5 pb-5 flex items-center gap-3 sm:gap-4 self-end sm:self-auto flex-wrap justify-end">
-            <button class="text-zinc-400 hover:text-white transition">
-                <img class="w-5" src="assets/brightness.svg" alt="">
-            </button>
-
-            <!-- Broker / Connect Bot / Connected Badge -->
-            <div class="relative inline-block text-left">
-                <a id="broker-btn" href="https://one.exnessonelink.com/a/v630hqc0" target="_blank"
-                   style="display:block" onclick="brokerAccountClicked()">
-                    <button class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs px-3 py-1 rounded-full transition shadow-lg shadow-brandGold/10 cursor-pointer select-none whitespace-nowrap">
-                        Create Broker Account
-                    </button>
-                </a>
-                <button id="connect-bot-btn" onclick="toggleMT5Dropdown(event)" style="display:none"
-                        class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs px-3 py-1 rounded-full transition shadow-lg shadow-brandGold/10 cursor-pointer select-none">
-                    Connect bot
-                </button>
-                <span id="connected-badge" style="display:none"
-                      class="flex items-center gap-1.5 text-[11px] font-semibold text-brandGreen bg-brandGreen/10 border border-brandGreen/30 px-2.5 py-1 rounded-full">
-                    <span class="w-1.5 h-1.5 rounded-full bg-brandGreen"></span> Connected
-                </span>
-
-                <!-- MT5 Connect Dropdown -->
-                <div id="mt5-dropdown-section"
-                     class="hidden absolute right-0 mt-2 w-[320px] sm:w-[360px] z-50 origin-top-right">
-                    <div class="w-full bg-black rounded-2xl p-7 shadow-2xl border border-white/[0.02]"
-                         onclick="event.stopPropagation()">
-                        <h2 class="text-center text-lg font-bold tracking-tight text-white mb-6">Enter MT5 Credentials</h2>
-                        <form id="mt5Form" class="space-y-4">
-                            <div class="flex flex-col gap-1.5 text-left">
-                                <label class="text-sm font-medium text-zinc-300 px-1">Server</label>
-                                <input id="mt5Server" type="text" placeholder="Server"
-                                       class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-400 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
-                            </div>
-                            <div class="flex flex-col gap-1.5 text-left">
-                                <label class="text-sm font-medium text-zinc-300 px-1">Login</label>
-                                <input id="mt5Login" type="text" placeholder="Login"
-                                       class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-400 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
-                            </div>
-                            <div class="flex flex-col gap-1.5 text-left">
-                                <label class="text-sm font-medium text-zinc-300 px-1">Investor Password</label>
-                                <input id="mt5InvestorPassword" type="password" placeholder="Investor Password"
-                                       class="w-full bg-[#1c1c1e] text-zinc-100 placeholder-zinc-400 text-xs px-4 py-2 rounded-full border border-transparent focus:border-zinc-700 focus:outline-none transition-all">
-                            </div>
-                            <div class="pt-3">
-                                <button type="submit"
-                                        class="w-full bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-sm py-2 rounded-full transition-colors shadow-md active:scale-[0.99]">
-                                    Connect Bot
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <a id="admin-link" href="https://bullionalgosystem.com/admindashboard.html" style="display:none"
-               class="text-[11px] font-medium text-brandGold flex items-center gap-1.5 transition">
-                <i data-lucide="shield" class="w-3.5 h-3.5"></i> Admin
-            </a>
-
-            <button onclick="document.getElementById('logout-modal').showModal()"
-                    class="text-[11px] font-medium text-brandRed/80 hover:text-brandRed flex items-center gap-1.5 transition cursor-pointer">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
-            </button>
-
-            <!-- Logout Modal -->
-            <dialog id="logout-modal"
-                    class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-6 w-full max-w-[380px] shadow-2xl border border-white/5 open:flex flex-col items-center gap-6">
-                <p class="text-sm font-medium tracking-wide text-center text-zinc-200 px-2">You are about to log out, kindly confirm</p>
-                <div class="flex items-center justify-center gap-8 w-full px-4">
-                    <button onclick="document.getElementById('logout-modal').close()" type="button"
-                            class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-medium text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">
-                        Back
-                    </button>
-                    <a href="https://my-project-gq9n.onrender.com/auth/logout"
-                       class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-semibold text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">
-                        Confirm
-                    </a>
-                </div>
-            </dialog>
-
-            <!-- Connection Status Modal -->
-            <dialog id="connect-status-modal"
-                    class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-3 shadow-2xl border border-white/5 open:flex items-center gap-2">
-                <span id="connect-status-dot" class="w-2 h-2 rounded-full bg-zinc-500"></span>
-                <span id="connect-status-text" class="text-xs font-medium">Checking status...</span>
-                <button onclick="document.getElementById('connect-status-modal').close()"
-                        class="ml-2 text-zinc-500 hover:text-white transition cursor-pointer text-xs">✕</button>
-            </dialog>
+        <div class="chart-range-tabs">
+          <button id="tab-7"  class="range-tab active" onclick="setChartRange(7)">7D</button>
+          <button id="tab-30" class="range-tab"        onclick="setChartRange(30)">30D</button>
         </div>
-    </header>
+      </div>
 
-    <!-- ═══════════════════════════ NOT CONNECTED OVERLAY ═══════════════════════════ -->
-    <div id="dashboard-overlay" style="display:none"
-         class="flex flex-col items-center justify-center text-center gap-4 py-32">
-        <h2 class="text-lg font-bold text-white">Connect your trading account to get started</h2>
-        <p class="text-xs text-zinc-500 max-w-xs">Your dashboard will populate with live data once your MT5 account is connected.</p>
-        <button onclick="updateConnectStatusModal(); document.getElementById('connect-status-modal').showModal()"
-                class="bg-brandGold hover:bg-amber-500 text-black font-bold text-xs px-6 py-2 rounded-full transition shadow-lg shadow-brandGold/10 cursor-pointer">
-            Check Status
-        </button>
+      <!-- SVG chart -->
+      <div class="chart-svg-wrap" id="chart-data-view">
+        <div class="chart-grid"></div>
+        <svg id="balance-chart-svg" width="100%" height="100%" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="chart-empty" id="chart-empty-view">
+        <div class="chart-empty-icon">📈</div>
+        <span>No chart data available yet</span>
+      </div>
+      <div class="chart-labels" id="chart-labels"></div>
     </div>
 
-    <!-- ═══════════════════════════ DASHBOARD BODY ═══════════════════════════ -->
-    <div id="dashboard-body" style="display:none">
+    <!-- ── STATS ROW (4 cards) ── -->
+    <div class="stats-row">
 
-        <!-- ── MAIN CHART + SIDEBAR ── -->
-        <main class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+      <!-- Total Profit -->
+      <div class="stat-card">
+        <span class="stat-card-label">// Total Profit</span>
+        <span class="stat-card-value" id="total-profit">—</span>
+        <span class="stat-card-sub">All time closed P&amp;L</span>
+      </div>
 
-            <!-- Chart Card -->
-            <div class="md:col-span-3 bg-cardBg border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col justify-between min-h-[300px] md:min-h-[340px] relative overflow-hidden shadow-xl">
-                <div class="pt-3 absolute inset-0 radial-chart-glow z-0 pointer-events-none">
-                    <img class="w-full h-full object-cover select-none" src="assets/chartcolorpng.png" alt="">
-                </div>
+      <!-- Floating PnL -->
+      <div class="stat-card">
+        <span class="stat-card-label">// Floating PnL</span>
+        <span class="stat-card-value" id="floating-pnl">—</span>
+        <span class="stat-card-sub">Open positions unrealised</span>
+      </div>
 
-                <!-- Chart header: balance + range toggle -->
-                <div class="flex justify-between items-start relative z-40 w-full mb-2">
-                    <div>
-                        <span class="text-xs font-medium text-white">Account Balance</span>
-                        <div id="total-asset" class="text-2xl md:text-3xl font-bold tracking-tight mt-1">--</div>
-                    </div>
-                    <!-- Range toggle tabs -->
-                    <div class="flex bg-white/5 border border-white/10 rounded-full p-0.5 gap-0.5">
-                        <button id="tab-7" onclick="setChartRange(7)"
-                                class="range-tab active text-[10px] font-semibold px-3 py-1 rounded-full transition">
-                            7D
-                        </button>
-                        <button id="tab-30" onclick="setChartRange(30)"
-                                class="range-tab text-[10px] font-semibold px-3 py-1 rounded-full transition">
-                            30D
-                        </button>
-                    </div>
-                </div>
+      <!-- Total Trades -->
+      <div class="stat-card">
+        <span class="stat-card-label">// Total Trades</span>
+        <span class="stat-card-value td-gold" id="total-trades">—</span>
+        <span class="stat-card-sub">Closed trade count</span>
+      </div>
 
-                <!-- SVG Line Chart -->
-                <div id="chart-data-view" class="h-40 md:h-44 w-full relative chart-grid-mesh mt-2 z-10">
-                    <svg id="balance-chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible"></svg>
-                </div>
+      <!-- Win Rate -->
+      <div class="stat-card">
+        <span class="stat-card-label">// Win Rate</span>
+        <span class="stat-card-value green" id="win-rate">—</span>
+        <span class="stat-card-sub">Profitable trades</span>
+      </div>
 
-                <!-- Empty state -->
-                <div id="chart-empty-view" style="display:none"
-                     class="h-40 md:h-44 w-full flex flex-col items-center justify-center gap-3 z-10">
-                    <div style="width:80px;height:80px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                        <img src="assets/chart-empty.png" class="w-12 h-12 opacity-70" alt="No data" onerror="this.style.display='none'">
-                    </div>
-                    <span class="text-xs text-zinc-500">No data available</span>
-                </div>
+    </div>
 
-                <!-- Date labels -->
-                <div id="chart-labels" class="flex justify-between items-center text-[10px] font-bold text-zinc-400 px-1 relative z-20 mt-2"></div>
-            </div>
-
-            <!-- Sidebar Cards -->
-            <div class="md:col-span-1 flex flex-row md:flex-col gap-3">
-                <!-- Total Profit -->
-                <div class="relative bg-cardBg border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col gap-4 md:gap-8 flex-1 md:h-[162px] shadow-lg overflow-hidden">
-                    <div class="flex items-center gap-1.5">
-                        <img class="w-4" src="assets/profitcard.svg" alt="">
-                        <span class="text-xs font-medium">Total Profit</span>
-                    </div>
-                    <div>
-                        <div id="total-profit" class="text-xl md:text-2xl font-bold tracking-tight text-brandGold">--</div>
-                        <span class="text-[10px] font-bold text-brandGreen mt-0.5 block">Overall</span>
-                    </div>
-                    <div class="absolute right-0 bottom-0 opacity-60 pointer-events-none">
-                        <img class="w-[90px] md:w-[110px]" src="assets/totalprofit.png" alt="">
-                    </div>
-                </div>
-
-                <!-- XAUUSD Live Price -->
-                <div class="bg-cardBg border border-white/5 rounded-2xl p-3 md:p-2 flex-1 md:h-[162px] shadow-lg">
-                    <div class="flex items-center gap-2 md:px-2 md:pt-2 mb-2">
-                        <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brandGold/20 flex items-center justify-center border border-brandGold/30 shrink-0">
-                            <img src="assets/assercard.svg" alt="">
-                        </div>
-                        <span class="text-xs font-semibold tracking-wider text-zinc-300 font-mono">XAUUSD</span>
-                    </div>
-                    <div id="xauusd-price" class="md:px-2 text-xl md:text-3xl font-black tracking-tight pt-1">--</div>
-                    <div id="xauusd-live-label" class="md:px-2 text-[10px] font-bold text-brandGreen mt-1">Live</div>
-                </div>
-            </div>
-        </main>
-
-        <!-- ── STATS ROW ── -->
-        <section class="grid grid-cols-3 gap-3 mb-4">
-            <!-- Total Trades -->
-            <div class="bg-cardBg border border-white/5 rounded-2xl flex flex-col justify-between p-3 md:p-4 h-28 md:h-32 shadow-md relative overflow-hidden">
-                <div class="flex items-center gap-1.5">
-                    <img class="w-4 h-4" src="assets/totaltradescard.svg" alt="">
-                    <span class="text-[10px] md:text-xs font-medium text-zinc-300">Total Trades</span>
-                </div>
-                <div id="total-trades" class="text-2xl md:text-3xl font-bold tracking-tight self-end">--</div>
-                <div class="absolute left-0 bottom-0 opacity-50 pointer-events-none">
-                    <img class="w-16 md:w-20 rounded-bl-2xl" src="assets/totaltrades.png" alt="">
-                </div>
-            </div>
-
-            <!-- Floating PnL -->
-            <div class="bg-cardBg border border-white/5 rounded-2xl flex flex-col justify-between p-3 md:p-4 h-28 md:h-32 shadow-md relative overflow-hidden">
-                <div class="flex items-center gap-1.5">
-                    <img class="w-4" src="assets/floatingpnlcard.svg" alt="">
-                    <span class="text-[10px] md:text-xs font-medium text-zinc-300">Floating PnL</span>
-                </div>
-                <div id="floating-pnl" class="text-lg md:text-2xl font-bold tracking-tight text-brandGold self-end">--</div>
-                <div class="absolute left-0 bottom-0 opacity-50 pointer-events-none">
-                    <img class="w-16 md:w-20" src="assets/floatingpnl.png" alt="">
-                </div>
-            </div>
-
-            <!-- Win Rate -->
-            <div class="bg-cardBg border border-white/5 rounded-2xl flex flex-col justify-between p-3 md:p-4 h-28 md:h-32 shadow-md relative overflow-hidden">
-                <div class="flex items-center gap-1.5">
-                    <img class="w-4 h-4" src="assets/halftrophy.svg" alt="">
-                    <span class="text-[10px] md:text-xs font-medium text-zinc-300">Win Rate</span>
-                </div>
-                <div id="win-rate" class="text-2xl md:text-3xl font-bold tracking-tight self-end">--</div>
-                <div class="absolute left-0 bottom-0 opacity-50 pointer-events-none">
-                    <img class="w-[70px] md:w-[90px]" src="assets/wintrophy.png" alt="">
-                </div>
-            </div>
-        </section>
-
-        <!-- ── OPEN POSITIONS ── -->
-        <div class="space-y-3 mb-6">
-            <h2 class="text-base font-bold text-white tracking-tight px-1">Open Positions</h2>
-            <div id="positions-data-view" style="display:none" class="overflow-x-auto shadow-xl">
-                <table class="w-full text-left border-separate border-spacing-y-2 min-w-[480px]">
-                    <thead>
-                        <tr class="text-[11px] uppercase tracking-wider text-zinc-400">
-                            <th class="pb-2 px-4 font-medium">Entry</th>
-                            <th class="pb-2 px-4 font-medium">Current</th>
-                            <th class="pb-2 px-4 font-medium">Dir</th>
-                            <th class="pb-2 px-4 font-medium">Lots</th>
-                            <th class="pb-2 px-4 font-medium text-right">PnL</th>
-                        </tr>
-                    </thead>
-                    <tbody id="positions-tbody" class="text-sm font-mono text-zinc-200"></tbody>
-                </table>
-            </div>
-            <div id="positions-empty-view" class="flex flex-col items-center justify-center gap-3 py-8">
-                <div style="width:56px;height:56px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <img src="assets/position-empty.png" class="w-8 h-8 opacity-70" alt="No data" onerror="this.style.display='none'">
-                </div>
-                <span class="text-xs text-zinc-500">No open positions</span>
-            </div>
+    <!-- ── XAUUSD PRICE (TradingView widget) ── -->
+    <div class="xauusd-card" style="margin-bottom:16px;">
+      <div class="xauusd-header">
+        <span class="xauusd-pip"></span>
+        <span class="xauusd-pair">XAUUSD · Live Price</span>
+      </div>
+      <!-- TradingView Single Ticker Widget -->
+      <div class="tv-widget-wrap">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+          {
+            "symbol": "OANDA:XAUUSD",
+            "width": "100%",
+            "locale": "en",
+            "colorTheme": "dark",
+            "isTransparent": true
+          }
+          </script>
         </div>
+      </div>
+    </div>
 
-        <!-- ── TRADE HISTORY ── -->
-        <div class="space-y-3 mb-6">
-            <h2 class="text-base font-bold text-white tracking-tight px-1">Trade History</h2>
-            <div id="history-data-view" style="display:none" class="overflow-x-auto shadow-xl">
-                <table class="w-full text-left border-separate border-spacing-y-2 min-w-[480px]">
-                    <thead>
-                        <tr class="text-[11px] uppercase tracking-wider text-zinc-400">
-                            <th class="pb-2 px-4 font-medium">Entry</th>
-                            <th class="pb-2 px-4 font-medium">Exit</th>
-                            <th class="pb-2 px-4 font-medium">Dir</th>
-                            <th class="pb-2 px-4 font-medium">Lots</th>
-                            <th class="pb-2 px-4 font-medium text-right">Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-tbody" class="text-sm font-mono text-zinc-200"></tbody>
-                </table>
-            </div>
-            <div id="history-empty-view" class="flex flex-col items-center justify-center gap-3 py-8">
-                <div style="width:56px;height:56px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <img src="assets/position-empty.png" class="w-8 h-8 opacity-70" alt="No data" onerror="this.style.display='none'">
-                </div>
-                <span class="text-xs text-zinc-500">No trade history</span>
-            </div>
+    <!-- ── OPEN POSITIONS + TRADE HISTORY (2 col) ── -->
+    <div class="lower-grid">
+
+      <!-- Open Positions -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="table-card-title">Open Positions</span>
+          <span class="table-count" id="positions-count"></span>
         </div>
-
-        <!-- ── PnL CALENDAR (hidden on mobile) ── -->
-        <div id="pnl-calendar" class="hidden md:block space-y-6 pt-4 mb-8">
-            <div class="flex items-center justify-center gap-6">
-                <button onclick="calendarPrev()" class="text-zinc-500 hover:text-white transition">
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                </button>
-                <h3 id="calendar-month-label" class="text-lg font-bold tracking-tight text-white">--</h3>
-                <button onclick="calendarNext()" class="text-zinc-500 hover:text-white transition">
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </button>
-            </div>
-            <div class="grid grid-cols-7 gap-2 text-center text-xs text-zinc-400 font-medium">
-                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-            </div>
-            <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-xs"></div>
+        <div id="positions-data-view" style="display:none; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Entry</th>
+                <th>Current</th>
+                <th>Dir</th>
+                <th>Lots</th>
+                <th>PnL</th>
+              </tr>
+            </thead>
+            <tbody id="positions-tbody"></tbody>
+          </table>
         </div>
+        <div class="table-empty" id="positions-empty-view">
+          <div class="table-empty-icon">—</div>
+          <span>No open positions</span>
+        </div>
+      </div>
 
-    </div><!-- end dashboard-body -->
+      <!-- Trade History -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="table-card-title">Trade History</span>
+          <span class="table-count" id="history-count"></span>
+        </div>
+        <div id="history-data-view" style="display:none; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>Dir</th>
+                <th>Lots</th>
+                <th>Profit</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-empty" id="history-empty-view">
+          <div class="table-empty-icon">—</div>
+          <span>No trade history</span>
+        </div>
+      </div>
 
-    <footer class="mt-12 text-center text-[10px] text-zinc-600 border-t border-white/5 py-6">
-        <p>© 2026 Bullion Algo System. All Rights Reserved.</p>
-    </footer>
+    </div>
+
+    <!-- ── PnL CALENDAR ── -->
+    <div class="calendar-card">
+      <div class="calendar-header">
+        <span class="calendar-month" id="calendar-month-label">—</span>
+        <div class="calendar-nav">
+          <button class="cal-btn" onclick="calendarPrev()">‹</button>
+          <button class="cal-btn" onclick="calendarNext()">›</button>
+        </div>
+      </div>
+      <div class="calendar-dow">
+        <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div>
+        <div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div>
+        <div class="cal-dow">Sat</div>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+
+  </div><!-- /dashboard-body -->
+</div><!-- /dash-wrap -->
+
+<!-- ── FOOTER ── -->
+<footer>
+  <span class="footer-copy">© 2026 Bullion Algo Systems. All rights reserved.</span>
+  <a href="index.html" class="footer-back">← Back to site</a>
+</footer>
+
+<!-- ═══ MT5 CONNECT MODAL ═══ -->
+<div class="modal-overlay" id="connect-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeConnectModal()">✕</button>
+    <div class="modal-eyebrow">// MT5 Credentials</div>
+    <div class="modal-title">Connect Your Bot</div>
+    <form id="mt5-form">
+      <label class="modal-label">Server</label>
+      <input type="text"     id="mt5-server"   class="modal-input" placeholder="e.g. Exness-MT5Real">
+      <label class="modal-label">Login</label>
+      <input type="text"     id="mt5-login"    class="modal-input" placeholder="Account number">
+      <label class="modal-label">Investor Password</label>
+      <input type="password" id="mt5-password" class="modal-input" placeholder="Read-only password">
+      <div class="modal-divider"></div>
+      <button type="submit" class="btn-modal-submit">Connect Account →</button>
+    </form>
+  </div>
 </div>
 
-<!-- ═══════════════════════════ SCRIPTS ═══════════════════════════ -->
-<script>lucide.createIcons();</script>
+<!-- ═══ LOGOUT CONFIRM MODAL ═══ -->
+<div class="logout-modal-overlay" id="logout-modal">
+  <div class="logout-modal">
+    <p>You are about to sign out of your Bullion Algo account. Confirm?</p>
+    <div class="logout-modal-actions">
+      <button class="btn-logout-cancel" onclick="closeLogoutModal()">Cancel</button>
+      <a href="https://my-project-gq9n.onrender.com/auth/logout" class="btn-logout-confirm">Sign Out</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toast-title"></div>
+  <div class="toast-msg"   id="toast-msg"></div>
+</div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
 
 <!-- Load screen -->
 <script>
-    const loadScreen = document.getElementById('loadScreen');
-    const loadLogo = document.getElementById('loadLogo');
-    setTimeout(() => { loadLogo.style.opacity = '1'; }, 100);
-    setTimeout(() => { loadLogo.style.opacity = '0'; }, 1200);
+  window.addEventListener('DOMContentLoaded', () => {
+    const logo = document.getElementById('load-logo');
+    const screen = document.getElementById('load-screen');
+    setTimeout(() => logo.classList.add('visible'), 100);
     setTimeout(() => {
-        loadScreen.style.transition = 'opacity 0.5s ease';
-        loadScreen.style.opacity = '0';
-        setTimeout(() => { loadScreen.style.display = 'none'; }, 500);
-    }, 1500);
+      screen.classList.add('fade');
+      setTimeout(() => screen.style.display = 'none', 500);
+    }, 1600);
+  });
 </script>
 
-<!-- MT5 dropdown toggle -->
+<!-- Modal helpers -->
 <script>
-    function toggleMT5Dropdown(event) {
-        event.stopPropagation();
-        document.getElementById('mt5-dropdown-section').classList.toggle('hidden');
-    }
-    document.addEventListener('click', (e) => {
-        const drop = document.getElementById('mt5-dropdown-section');
-        const btn = document.getElementById('connect-bot-btn');
-        if (drop && !drop.classList.contains('hidden') && !drop.contains(e.target) && !btn.contains(e.target)) {
-            drop.classList.add('hidden');
-        }
-    });
+  function openConnectModal()  { document.getElementById('connect-modal').classList.add('open'); }
+  function closeConnectModal() { document.getElementById('connect-modal').classList.remove('open'); }
+  function openLogoutModal()   { document.getElementById('logout-modal').classList.add('open'); }
+  function closeLogoutModal()  { document.getElementById('logout-modal').classList.remove('open'); }
+
+  document.getElementById('connect-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('connect-modal')) closeConnectModal();
+  });
+  document.getElementById('logout-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('logout-modal')) closeLogoutModal();
+  });
 </script>
 
-<!-- Gold price -->
+<!-- Toast -->
 <script>
-    async function fetchGoldPrice() {
-        try {
-            const res = await fetch('https://api.metals.live/v1/spot/gold');
-            const data = await res.json();
-            const price = data[0]?.price;
-            if (!price) throw new Error('No price');
-            document.getElementById('xauusd-price').textContent = `$${price.toFixed(2)}`;
-        } catch (err) {
-            document.getElementById('xauusd-price').textContent = '--';
-        }
-    }
-    fetchGoldPrice();
-    setInterval(fetchGoldPrice, 30000);
+  function showToast(title, msg) {
+    document.getElementById('toast-title').textContent = title;
+    document.getElementById('toast-msg').textContent   = msg;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4500);
+  }
 </script>
 
 <!-- Chart -->
 <script>
-    let _chartHistory = [];
-    let _chartBalance = 0;
-    let _chartRange = 7;
+  let _chartHistory = [];
+  let _chartBalance = 0;
+  let _chartRange   = 7;
 
-    function setChartRange(days) {
-        _chartRange = days;
-        document.getElementById('tab-7').classList.toggle('active', days === 7);
-        document.getElementById('tab-30').classList.toggle('active', days === 30);
-        if (_chartHistory.length) {
-            renderLineChart(buildChartData(_chartHistory, _chartBalance, days));
-        }
+  function setChartRange(days) {
+    _chartRange = days;
+    document.getElementById('tab-7').classList.toggle('active', days === 7);
+    document.getElementById('tab-30').classList.toggle('active', days === 30);
+    if (_chartHistory.length) renderLineChart(buildChartData(_chartHistory, _chartBalance, days));
+  }
+
+  function buildChartData(history, currentBalance, days) {
+    const dailyPnl = {};
+    (history || []).forEach(order => {
+      if (!order.doneTime || order.profit === undefined) return;
+      const day = new Date(order.doneTime).toISOString().split('T')[0];
+      dailyPnl[day] = (dailyPnl[day] || 0) + order.profit;
+    });
+    const points = [];
+    let running = currentBalance;
+    for (let i = 0; i < days; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      points.unshift({ date: key, balance: running });
+      running -= (dailyPnl[key] || 0);
     }
+    return points;
+  }
 
-    function buildChartData(history, currentBalance, days) {
-        const dailyPnl = {};
-        (history || []).forEach(order => {
-            if (!order.doneTime || order.profit === undefined) return;
-            const day = new Date(order.doneTime).toISOString().split('T')[0];
-            dailyPnl[day] = (dailyPnl[day] || 0) + order.profit;
-        });
-        const points = [];
-        let running = currentBalance;
-        for (let i = 0; i < days; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const key = d.toISOString().split('T')[0];
-            points.unshift({ date: key, balance: running });
-            running -= (dailyPnl[key] || 0);
-        }
-        return points;
+  function renderLineChart(points) {
+    const svg    = document.getElementById('balance-chart-svg');
+    const labels = document.getElementById('chart-labels');
+    if (!svg || !points.length) return;
+
+    const W = svg.parentElement.clientWidth  || 700;
+    const H = svg.parentElement.clientHeight || 200;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    const balances = points.map(p => p.balance);
+    const minB = Math.min(...balances) * 0.995;
+    const maxB = Math.max(...balances) * 1.005;
+    const range = maxB - minB || 1;
+
+    const toX = i => (i / Math.max(points.length - 1, 1)) * W;
+    const toY = b => H - ((b - minB) / range) * (H * 0.88);
+
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.balance).toFixed(1)}`).join(' ');
+    const fillD = `${pathD} L${toX(points.length - 1)},${H} L0,${H} Z`;
+
+    const lastX   = toX(points.length - 1).toFixed(1);
+    const lastY   = toY(points[points.length - 1].balance).toFixed(1);
+    const lastVal = points[points.length - 1].balance;
+    const tipW    = 96;
+    const tipX    = Math.min(parseFloat(lastX) - tipW / 2, W - tipW - 4);
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="cFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#C9A84C" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${fillD}" fill="url(#cFill)"/>
+      <path d="${pathD}" fill="none" stroke="#C9A84C" stroke-width="1.8"
+            stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${lastX}" cy="${lastY}" r="4" fill="#C9A84C"/>
+      <circle cx="${lastX}" cy="${lastY}" r="8" fill="#C9A84C" opacity="0.15"/>
+      <rect x="${tipX}" y="${parseFloat(lastY) - 26}" width="${tipW}" height="18"
+            rx="5" fill="#2ECC8A" opacity="0.9"/>
+      <text x="${parseFloat(tipX) + tipW / 2}" y="${parseFloat(lastY) - 13}"
+            text-anchor="middle" fill="#080B10" font-size="10" font-weight="700"
+            font-family="monospace">$${lastVal.toLocaleString()}</text>
+    `;
+
+    const step = Math.max(1, Math.ceil(points.length / 7));
+    labels.innerHTML = points
+      .filter((_, i) => i % step === 0 || i === points.length - 1)
+      .map(p => {
+        const d = new Date(p.date);
+        return `<span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>`;
+      }).join('');
+  }
+
+  function initChart(history, balance) {
+    _chartHistory = history;
+    _chartBalance = balance;
+    const points = buildChartData(history, balance, _chartRange);
+    if (!points.some(p => p.balance !== balance)) {
+      document.getElementById('chart-data-view').style.display = 'none';
+      document.getElementById('chart-empty-view').style.display = 'flex';
+    } else {
+      document.getElementById('chart-data-view').style.display = 'block';
+      document.getElementById('chart-empty-view').style.display = 'none';
+      renderLineChart(points);
     }
-
-    function renderLineChart(points) {
-        const svg = document.getElementById('balance-chart-svg');
-        const labels = document.getElementById('chart-labels');
-        if (!svg || !points.length) return;
-
-        const W = svg.parentElement.clientWidth || 500;
-        const H = svg.parentElement.clientHeight || 160;
-        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
-        const balances = points.map(p => p.balance);
-        const minB = Math.min(...balances) * 0.995;
-        const maxB = Math.max(...balances) * 1.005;
-        const range = maxB - minB || 1;
-
-        const toX = i => (i / Math.max(points.length - 1, 1)) * W;
-        const toY = b => H - ((b - minB) / range) * (H * 0.85);
-
-        const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.balance).toFixed(1)}`).join(' ');
-        const fillD = `${pathD} L${toX(points.length - 1)},${H} L0,${H} Z`;
-
-        const lastX = toX(points.length - 1).toFixed(1);
-        const lastY = toY(points[points.length - 1].balance).toFixed(1);
-        const lastVal = points[points.length - 1].balance;
-        const tooltipW = 90;
-        const tooltipX = Math.min(parseFloat(lastX) - tooltipW / 2, W - tooltipW - 4);
-
-        svg.innerHTML = `
-            <defs>
-                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#EAA83A" stop-opacity="0.2"/>
-                    <stop offset="100%" stop-color="#EAA83A" stop-opacity="0"/>
-                </linearGradient>
-            </defs>
-            <path d="${fillD}" fill="url(#chartFill)"/>
-            <path d="${pathD}" fill="none" stroke="#EAA83A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-            <circle cx="${lastX}" cy="${lastY}" r="4" fill="#EAA83A"/>
-            <rect x="${tooltipX}" y="${parseFloat(lastY) - 24}" width="${tooltipW}" height="18" rx="5" fill="#25C06D" opacity="0.92"/>
-            <text x="${parseFloat(tooltipX) + tooltipW / 2}" y="${parseFloat(lastY) - 11}" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="monospace">$${lastVal.toLocaleString()}</text>
-        `;
-
-        const step = Math.max(1, Math.ceil(points.length / 6));
-        labels.innerHTML = points
-            .filter((_, i) => i % step === 0 || i === points.length - 1)
-            .map(p => {
-                const d = new Date(p.date);
-                return `<span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>`;
-            }).join('');
-    }
-
-    function initChart(history, balance) {
-        _chartHistory = history;
-        _chartBalance = balance;
-        renderLineChart(buildChartData(history, balance, _chartRange));
-    }
+  }
 </script>
 
 <!-- Calendar -->
 <script>
-    let _calendarHistory = [];
-    let _calendarYear = new Date().getFullYear();
-    let _calendarMonth = new Date().getMonth();
+  let _calHistory = [];
+  let _calYear    = new Date().getFullYear();
+  let _calMonth   = new Date().getMonth();
 
-    function renderCalendar() {
-        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-        document.getElementById('calendar-month-label').textContent = `${monthNames[_calendarMonth]} ${_calendarYear}`;
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-        // Build daily PnL map for this month
-        const dailyPnl = {};
-        (_calendarHistory || []).forEach(order => {
-            if (!order.doneTime || order.profit === undefined) return;
-            const d = new Date(order.doneTime);
-            if (d.getFullYear() === _calendarYear && d.getMonth() === _calendarMonth) {
-                const day = d.getDate();
-                dailyPnl[day] = (dailyPnl[day] || 0) + order.profit;
-            }
-        });
+  function renderCalendar() {
+    document.getElementById('calendar-month-label').textContent = `${MONTH_NAMES[_calMonth]} ${_calYear}`;
 
-        const firstDay = new Date(_calendarYear, _calendarMonth, 1).getDay();
-        const daysInMonth = new Date(_calendarYear, _calendarMonth + 1, 0).getDate();
-        const daysInPrev = new Date(_calendarYear, _calendarMonth, 0).getDate();
-
-        let cells = '';
-
-        // Prev month padding
-        for (let i = firstDay - 1; i >= 0; i--) {
-            cells += `<div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-2 min-h-[60px] text-zinc-600 font-bold text-xs">${daysInPrev - i}</div>`;
-        }
-
-        // Current month
-        for (let d = 1; d <= daysInMonth; d++) {
-            const pnl = dailyPnl[d];
-            const pnlHtml = pnl !== undefined
-                ? `<span class="text-[10px] font-bold ${pnl >= 0 ? 'text-brandGold' : 'text-brandRed'} block mt-1">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(0)}</span>`
-                : '';
-            cells += `<div class="bg-zinc-900/60 border border-white/5 rounded-xl p-2 min-h-[60px] text-zinc-300 font-bold text-xs flex flex-col"><span>${d}</span>${pnlHtml}</div>`;
-        }
-
-        // Next month padding
-        const totalCells = firstDay + daysInMonth;
-        const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-        for (let i = 1; i <= remaining; i++) {
-            cells += `<div class="bg-zinc-900/30 border border-white/[0.02] rounded-xl p-2 min-h-[60px] text-zinc-600 font-bold text-xs">${i}</div>`;
-        }
-
-        document.getElementById('calendar-grid').innerHTML = cells;
-    }
-
-    function calendarPrev() {
-        _calendarMonth--;
-        if (_calendarMonth < 0) { _calendarMonth = 11; _calendarYear--; }
-        renderCalendar();
-    }
-
-    function calendarNext() {
-        _calendarMonth++;
-        if (_calendarMonth > 11) { _calendarMonth = 0; _calendarYear++; }
-        renderCalendar();
-    }
-
-    function initCalendar(history) {
-        _calendarHistory = history;
-        _calendarYear = new Date().getFullYear();
-        _calendarMonth = new Date().getMonth();
-        renderCalendar();
-    }
-</script>
-
-<!-- Connection status modal helper -->
-<script>
-    function updateConnectStatusModal() {
-        const dot = document.getElementById('connect-status-dot');
-        const text = document.getElementById('connect-status-text');
-        const status = window._mt5Status || 'disconnected';
-        if (status === 'connected') {
-            dot.className = 'w-2 h-2 rounded-full bg-brandGreen';
-            text.textContent = 'Connected';
-        } else if (status === 'pending') {
-            dot.className = 'w-2 h-2 rounded-full bg-brandGold';
-            text.textContent = 'Pending — awaiting admin approval';
-        } else {
-            dot.className = 'w-2 h-2 rounded-full bg-brandRed';
-            text.textContent = 'Disconnected';
-        }
-    }
-</script>
-
-<!-- Render positions -->
-<script>
-    function renderPositions(positions) {
-        const limited = (positions || []).slice(0, 10);
-        if (!limited.length) {
-            document.getElementById('positions-data-view').style.display = 'none';
-            document.getElementById('positions-empty-view').style.display = 'flex';
-            return;
-        }
-        document.getElementById('positions-data-view').style.display = 'block';
-        document.getElementById('positions-empty-view').style.display = 'none';
-        document.getElementById('positions-tbody').innerHTML = limited.map(p => `
-            <tr class="bg-[#121214] hover:bg-zinc-900/50 transition">
-                <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">${p.openPrice ?? '--'}</td>
-                <td class="px-4 py-2 border-y border-white/5">${p.currentPrice ?? '--'}</td>
-                <td class="px-4 py-2 border-y border-white/5 font-semibold">${p.type === 'POSITION_TYPE_BUY' ? 'Buy' : 'Sell'}</td>
-                <td class="px-4 py-2 border-y border-white/5">${p.volume ?? '--'}</td>
-                <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right ${(p.profit ?? 0) >= 0 ? 'text-brandGold' : 'text-brandRed'} font-bold">
-                    ${p.profit != null ? `$${p.profit.toFixed(2)}` : '--'}
-                </td>
-            </tr>
-        `).join('');
-    }
-</script>
-
-<!-- Render history -->
-<script>
-    function renderHistory(history) {
-        const limited = (history || []).slice(0, 10);
-        if (!limited.length) {
-            document.getElementById('history-data-view').style.display = 'none';
-            document.getElementById('history-empty-view').style.display = 'flex';
-            return;
-        }
-        document.getElementById('history-data-view').style.display = 'block';
-        document.getElementById('history-empty-view').style.display = 'none';
-        document.getElementById('history-tbody').innerHTML = limited.map(o => `
-            <tr class="bg-[#121214] hover:bg-zinc-900/50 transition">
-                <td class="px-4 py-2 rounded-l-full border-y border-l border-white/5">${o.openPrice ?? '--'}</td>
-                <td class="px-4 py-2 border-y border-white/5">${o.closePrice ?? o.currentPrice ?? '--'}</td>
-                <td class="px-4 py-2 border-y border-white/5 font-semibold">${o.type?.includes('BUY') ? 'Buy' : 'Sell'}</td>
-                <td class="px-4 py-2 border-y border-white/5">${o.volume ?? '--'}</td>
-                <td class="px-4 py-2 rounded-r-full border-y border-r border-white/5 text-right ${(o.profit ?? 0) >= 0 ? 'text-brandGold' : 'text-brandRed'} font-bold">
-                    ${o.profit != null ? `$${o.profit.toFixed(2)}` : '--'}
-                </td>
-            </tr>
-        `).join('');
-    }
-</script>
-
-<!-- Main dashboard loader -->
-<script>
-    async function loadDashboard() {
-        try {
-            const res = await fetch('https://my-project-gq9n.onrender.com/auth/me', { credentials: 'include' });
-            const data = await res.json();
-
-            if (!data.loggedIn) {
-                window.location.href = 'https://bullionalgosystem.com/index.html';
-                return;
-            }
-
-            document.getElementById('welcome-name').textContent = `Welcome ${data.user.name}!`;
-            window._currentUserId = data.user.id;
-
-            if (data.user.role === 'admin') {
-                document.getElementById('admin-link').style.display = 'flex';
-            }
-
-            // MT5 status
-            const mt5Res = await fetch('https://my-project-gq9n.onrender.com/mt5/status', { credentials: 'include' });
-            const mt5Data = await mt5Res.json();
-
-            const connectBotBtn = document.getElementById('connect-bot-btn');
-            const brokerBtn = document.getElementById('broker-btn');
-            const connectedBadge = document.getElementById('connected-badge');
-            const brokerClicked = localStorage.getItem(`broker_clicked_${data.user.id}`);
-
-            if (mt5Data.account) {
-                connectBotBtn.style.display = 'none';
-                brokerBtn.style.display = 'none';
-            } else if (brokerClicked) {
-                connectBotBtn.style.display = 'block';
-                brokerBtn.style.display = 'none';
-            } else {
-                connectBotBtn.style.display = 'none';
-                brokerBtn.style.display = 'block';
-            }
-
-            window._mt5Status = mt5Data.account ? mt5Data.account.status : 'disconnected';
-            connectedBadge.style.display = (mt5Data.account?.status === 'connected') ? 'flex' : 'none';
-
-            if (!mt5Data.account || mt5Data.account.status !== 'connected') {
-                document.getElementById('dashboard-overlay').style.display = 'flex';
-                document.getElementById('dashboard-body').style.display = 'none';
-                return;
-            }
-
-            document.getElementById('dashboard-overlay').style.display = 'none';
-            document.getElementById('dashboard-body').style.display = 'block';
-
-            // Live MetaApi data
-            const liveRes = await fetch('https://my-project-gq9n.onrender.com/mt5/live-data', { credentials: 'include' });
-            const liveData = await liveRes.json();
-
-            if (liveData.connected) {
-                const history = liveData.history || [];
-                const positions = liveData.positions || [];
-
-                // Balance / profit
-                document.getElementById('total-asset').textContent = `$${liveData.balance.toLocaleString()}`;
-                document.getElementById('total-profit').textContent = `$${liveData.profit.toLocaleString()}`;
-
-                // Total trades = closed history count
-                document.getElementById('total-trades').textContent = history.length;
-
-                // Floating PnL = equity - balance (open trade unrealised profit)
-                const floatPnl = liveData.equity - liveData.balance;
-                const floatEl = document.getElementById('floating-pnl');
-                if (floatPnl !== 0) {
-                    floatEl.textContent = `${floatPnl >= 0 ? '+' : ''}$${floatPnl.toFixed(2)}`;
-                    floatEl.className = `text-lg md:text-2xl font-bold tracking-tight self-end ${floatPnl >= 0 ? 'text-brandGold' : 'text-brandRed'}`;
-                } else {
-                    floatEl.textContent = '--';
-                    floatEl.className = 'text-lg md:text-2xl font-bold tracking-tight self-end text-brandGold';
-                }
-
-                // Win rate from history
-                const closedTrades = history.filter(o => o.profit !== undefined);
-                const wonTrades = closedTrades.filter(o => o.profit > 0);
-                const winRate = closedTrades.length > 0
-                    ? Math.round((wonTrades.length / closedTrades.length) * 100)
-                    : 0;
-                document.getElementById('win-rate').textContent = `${winRate}%`;
-
-                // Chart
-                document.getElementById('chart-data-view').style.display = 'block';
-                document.getElementById('chart-empty-view').style.display = 'none';
-                initChart(history, liveData.balance);
-
-                // Positions
-                renderPositions(positions);
-
-                // History
-                renderHistory(history);
-
-                // Calendar
-                initCalendar(history);
-
-            } else {
-                // Connected but MetaApi can't reach the account
-                document.getElementById('chart-data-view').style.display = 'none';
-                document.getElementById('chart-empty-view').style.display = 'flex';
-                renderPositions([]);
-                renderHistory([]);
-                initCalendar([]);
-            }
-
-        } catch (err) {
-            console.error('Dashboard load error:', err);
-        }
-    }
-
-    loadDashboard();
-</script>
-
-<!-- MT5 connect form -->
-<script>
-    document.getElementById('mt5Form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const server = document.getElementById('mt5Server').value;
-        const account_number = document.getElementById('mt5Login').value;
-        const investor_password = document.getElementById('mt5InvestorPassword').value;
-        try {
-            const res = await fetch('https://my-project-gq9n.onrender.com/mt5/connect', {
-                method: 'POST', credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ server, account_number, investor_password })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('MT5 account submitted successfully! We will connect it shortly.');
-                localStorage.removeItem(`broker_clicked_${window._currentUserId}`);
-                document.getElementById('mt5-dropdown-section').classList.add('hidden');
-                loadDashboard();
-            } else {
-                alert(data.error || 'Something went wrong.');
-            }
-        } catch (err) {
-            alert('Could not connect to server.');
-        }
+    const dailyPnl = {};
+    (_calHistory || []).forEach(order => {
+      if (!order.doneTime || order.profit === undefined) return;
+      const d = new Date(order.doneTime);
+      if (d.getFullYear() === _calYear && d.getMonth() === _calMonth) {
+        const day = d.getDate();
+        dailyPnl[day] = (dailyPnl[day] || 0) + order.profit;
+      }
     });
+
+    const firstDay    = new Date(_calYear, _calMonth, 1).getDay();
+    const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+    const daysInPrev  = new Date(_calYear, _calMonth, 0).getDate();
+    let cells = '';
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+      cells += `<div class="cal-cell other-month"><span class="cal-day">${daysInPrev - i}</span></div>`;
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const pnl = dailyPnl[d];
+      const pnlHtml = pnl !== undefined
+        ? `<span class="cal-pnl ${pnl >= 0 ? 'pos' : 'neg'}">${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toFixed(0)}</span>`
+        : '';
+      cells += `<div class="cal-cell current-month"><span class="cal-day">${d}</span>${pnlHtml}</div>`;
+    }
+
+    const total = firstDay + daysInMonth;
+    const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= rem; i++) {
+      cells += `<div class="cal-cell other-month"><span class="cal-day">${i}</span></div>`;
+    }
+
+    document.getElementById('calendar-grid').innerHTML = cells;
+  }
+
+  function calendarPrev() {
+    _calMonth--;
+    if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+    renderCalendar();
+  }
+  function calendarNext() {
+    _calMonth++;
+    if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+    renderCalendar();
+  }
+  function initCalendar(history) {
+    _calHistory = history;
+    _calYear    = new Date().getFullYear();
+    _calMonth   = new Date().getMonth();
+    renderCalendar();
+  }
+</script>
+
+<!-- Positions -->
+<script>
+  function renderPositions(positions) {
+    const limited = (positions || []).slice(0, 10);
+    const countEl = document.getElementById('positions-count');
+    if (!limited.length) {
+      document.getElementById('positions-data-view').style.display = 'none';
+      document.getElementById('positions-empty-view').style.display = 'flex';
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = `${limited.length} open`;
+    document.getElementById('positions-data-view').style.display = 'block';
+    document.getElementById('positions-empty-view').style.display = 'none';
+    document.getElementById('positions-tbody').innerHTML = limited.map(p => {
+      const profit = p.profit ?? 0;
+      const dir    = p.type === 'POSITION_TYPE_BUY' ? 'BUY' : 'SELL';
+      return `
+        <tr>
+          <td>${p.openPrice    ?? '—'}</td>
+          <td>${p.currentPrice ?? '—'}</td>
+          <td><span class="${dir === 'BUY' ? 'dir-buy' : 'dir-sell'}">${dir}</span></td>
+          <td>${p.volume       ?? '—'}</td>
+          <td class="${profit >= 0 ? 'td-profit-pos' : 'td-profit-neg'}">
+            ${p.profit != null ? `${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}` : '—'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+</script>
+
+<!-- History -->
+<script>
+  function renderHistory(history) {
+    const limited = (history || []).slice(0, 10);
+    const countEl = document.getElementById('history-count');
+    if (!limited.length) {
+      document.getElementById('history-data-view').style.display = 'none';
+      document.getElementById('history-empty-view').style.display = 'flex';
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = `${history.length} total`;
+    document.getElementById('history-data-view').style.display = 'block';
+    document.getElementById('history-empty-view').style.display = 'none';
+    document.getElementById('history-tbody').innerHTML = limited.map(o => {
+      const profit = o.profit ?? 0;
+      const dir    = (o.type || '').includes('BUY') ? 'BUY' : 'SELL';
+      return `
+        <tr>
+          <td>${o.openPrice                            ?? '—'}</td>
+          <td>${o.closePrice ?? o.currentPrice         ?? '—'}</td>
+          <td><span class="${dir === 'BUY' ? 'dir-buy' : 'dir-sell'}">${dir}</span></td>
+          <td>${o.volume                               ?? '—'}</td>
+          <td class="${profit >= 0 ? 'td-profit-pos' : 'td-profit-neg'}">
+            ${o.profit != null ? `${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}` : '—'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+</script>
+
+<!-- ── MAIN DASHBOARD LOADER ── -->
+<script>
+  let _currentUserId = null;
+
+  function setHeaderActions(state) {
+    // state: 'broker' | 'connect' | 'connected'
+    const el = document.getElementById('header-actions');
+    
+      el.innerHTML = `<button class="btn-connect" onclick="openConnectModal()">Connect Bot →</button>`;
+    } if (state === 'connected') {
+      el.innerHTML = `
+        <span class="badge-connected">
+          <span class="badge-dot"></span> Bot Connected
+        </span>`;
+    }
+
+  function brokerClicked() {
+    if (_currentUserId) localStorage.setItem(`broker_clicked_${_currentUserId}`, 'true');
+    setTimeout(() => setHeaderActions('connect'), 400);
+  }
+
+  async function loadDashboard() {
+    try {
+      // ── Auth check ──
+      const authRes = await fetch('https://my-project-gq9n.onrender.com/auth/me', { credentials: 'include' });
+      const auth    = await authRes.json();
+
+      if (!auth.loggedIn) {
+        window.location.href = 'https://bullionalgosystem.com/index.html';
+        return;
+      }
+
+      const user = auth.user;
+      _currentUserId = user.id;
+
+      // Nav
+      const initials = (user.name || 'T').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      document.getElementById('nav-avatar').textContent   = initials;
+      document.getElementById('nav-username').textContent = user.name || 'Trader';
+      document.getElementById('welcome-name').textContent = (user.name || 'Trader').split(' ')[0];
+
+      if (user.role === 'admin') document.getElementById('admin-link').style.display = 'inline-block';
+
+      // ── MT5 status ──
+      const mt5Res  = await fetch('https://my-project-gq9n.onrender.com/mt5/status', { credentials: 'include' });
+      const mt5Data = await mt5Res.json();
+      const hasAccount    = !!mt5Data.account;
+      const isConnected   = mt5Data.account?.status === 'connected';
+      
+      // Header action state
+if (hasAccount) {
+  setHeaderActions('connected');
+} else {
+  setHeaderActions('connect');
+}
+
+      // If not connected → show overlay, hide body
+      if (!isConnected) {
+        document.getElementById('overlay-disconnected').style.display = 'flex';
+        document.getElementById('dashboard-body').style.display       = 'none';
+        return;
+      }
+
+      document.getElementById('overlay-disconnected').style.display = 'none';
+      document.getElementById('dashboard-body').style.display       = 'block';
+
+      // ── Live data ──
+      const liveRes  = await fetch('https://my-project-gq9n.onrender.com/mt5/live-data', { credentials: 'include' });
+      const liveData = await liveRes.json();
+
+      if (liveData.connected) {
+        const history   = liveData.history   || [];
+        const positions = liveData.positions || [];
+
+        // Balance
+        document.getElementById('total-balance').textContent = `$${liveData.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        // Total profit (sum of all closed trades)
+        const totalPnl = history.reduce((sum, o) => sum + (o.profit || 0), 0);
+        const profitEl = document.getElementById('total-profit');
+        profitEl.textContent = `${totalPnl >= 0 ? '+' : ''}$${Math.abs(totalPnl).toFixed(2)}`;
+        profitEl.className   = `stat-card-value ${totalPnl >= 0 ? 'green' : 'red'}`;
+
+        // Floating PnL
+        const floatPnl = liveData.equity - liveData.balance;
+        const floatEl  = document.getElementById('floating-pnl');
+        floatEl.textContent = floatPnl !== 0
+          ? `${floatPnl >= 0 ? '+' : ''}$${Math.abs(floatPnl).toFixed(2)}`
+          : '—';
+        floatEl.className = `stat-card-value ${floatPnl >= 0 ? 'green' : 'red'}`;
+
+        // Total trades
+        document.getElementById('total-trades').textContent = history.length;
+
+        // Win rate
+        const closed = history.filter(o => o.profit !== undefined);
+        const won    = closed.filter(o => o.profit > 0);
+        const wr     = closed.length > 0 ? Math.round((won.length / closed.length) * 100) : 0;
+        document.getElementById('win-rate').textContent = `${wr}%`;
+
+        // Chart
+        initChart(history, liveData.balance);
+
+        // Tables
+        renderPositions(positions);
+        renderHistory(history);
+
+        // Calendar
+        initCalendar(history);
+
+      } else {
+        // Connected to MetaApi but account unreachable
+        document.getElementById('chart-data-view').style.display  = 'none';
+        document.getElementById('chart-empty-view').style.display = 'flex';
+        renderPositions([]);
+        renderHistory([]);
+        initCalendar([]);
+        showToast('Connection Issue', 'MT5 account reachable but data unavailable. Try again shortly.');
+      }
+
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      showToast('Error', 'Could not load dashboard. Please refresh.');
+    }
+  }
+
+  loadDashboard();
+</script>
+
+<!-- MT5 form submit -->
+<script>
+  document.getElementById('mt5-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const server            = document.getElementById('mt5-server').value.trim();
+    const account_number    = document.getElementById('mt5-login').value.trim();
+    const investor_password = document.getElementById('mt5-password').value.trim();
+    if (!server || !account_number || !investor_password) {
+      showToast('Missing Fields', 'Please fill in all fields.'); return;
+    }
+    try {
+      const res  = await fetch('https://my-project-gq9n.onrender.com/mt5/connect', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ server, account_number, investor_password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Submitted ✦', 'Your account is being connected. Check back shortly.');
+        if (_currentUserId) localStorage.removeItem(`broker_clicked_${_currentUserId}`);
+        closeConnectModal();
+        setTimeout(loadDashboard, 2000);
+      } else {
+        showToast('Error', data.error || 'Something went wrong.');
+      }
+    } catch (err) {
+      showToast('Connection Error', 'Could not reach server.');
+    }
+  });
 </script>
 
 <!-- Broker click tracker -->
 <script>
-    function brokerAccountClicked() {
-        const userId = window._currentUserId;
-        if (userId) localStorage.setItem(`broker_clicked_${userId}`, 'true');
-        setTimeout(() => {
-            document.getElementById('broker-btn').style.display = 'none';
-            document.getElementById('connect-bot-btn').style.display = 'block';
-        }, 500);
-    }
+  function brokerClicked() {
+    if (_currentUserId) localStorage.setItem(`broker_clicked_${_currentUserId}`, 'true');
+    setTimeout(() => setHeaderActions('connect'), 500);
+  }
+</script>
+
+<!-- Server wake ping -->
+<script>
+  fetch('https://my-project-gq9n.onrender.com/api/ping').catch(() => {});
 </script>
 
 </body>
