@@ -1,616 +1,877 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Bullion Algo System</title>
-    <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dashBg: '#09090b',
-                        cardBg: '#121214',
-                        brandGold: '#EAA83A',
-                        brandGreen: '#25C06D',
-                        brandRed: '#E54B4B',
-                        brandMuted: '#7D7D82'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
-        body { font-family: 'Geist', sans-serif; background-color: #09090b; }
-        .chart-grid-mesh {
-            background-size: 40px 40px;
-            background-image:
-                linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
-        }
-        .radial-chart-glow { background: radial-gradient(circle, rgba(37,192,109,0.12) 0%, rgba(0,0,0,0) 70%); }
-        dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; }
-        .range-tab { transition: all 0.2s ease; }
-        .range-tab.active { background: #EAA83A; color: #000; font-weight: 700; }
-        .range-tab:not(.active) { background: transparent; color: #7D7D82; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.svg">
+  <title>Admin — Bullion Algo Systems</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ── DESIGN TOKENS ── */
+    :root {
+      --gold:        #C9A84C;
+      --gold-light:  #E8C97A;
+      --gold-dim:    #7A6020;
+      --gold-glow:   rgba(201,168,76,0.18);
+      --gold-glow2:  rgba(201,168,76,0.07);
+      --bg:          #080B10;
+      --bg2:         #0C1018;
+      --bg3:         #111620;
+      --bg4:         #161D2A;
+      --border:      rgba(201,168,76,0.18);
+      --border2:     rgba(201,168,76,0.07);
+      --text:        #E8E2D5;
+      --text-dim:    #8A8275;
+      --text-muted:  #4A4540;
+      --green:       #2ECC8A;
+      --red:         #E8524A;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* Film grain */
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.35;
+    }
+
+    /* ── LOAD SCREEN ── */
+    #load-screen { position: fixed; inset: 0; z-index: 1000; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
+    #load-screen.fade { opacity: 0; pointer-events: none; }
+    .load-logo { display: flex; flex-direction: column; align-items: center; gap: 20px; opacity: 0; transform: translateY(8px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .load-logo.visible { opacity: 1; transform: translateY(0); }
+    .load-logo img { width: 48px; height: 48px; object-fit: contain; }
+    .load-wordmark { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.08em; color: var(--text-dim); }
+    .load-wordmark span { color: var(--gold); }
+    .load-bar { width: 120px; height: 1px; background: var(--border2); position: relative; overflow: hidden; }
+    .load-bar::after { content: ''; position: absolute; left: -50%; top: 0; bottom: 0; width: 50%; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: loadSlide 1.2s ease infinite; }
+    @keyframes loadSlide { from { left: -50%; } to { left: 150%; } }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: linear-gradient(to bottom, rgba(8,11,16,0.98), transparent);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid var(--border2);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .logo-text { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; letter-spacing: 0.05em; color: var(--text); }
+    .logo-text span { color: var(--gold); }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-badge-admin {
+      font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--gold);
+      border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px;
+      background: var(--gold-glow2);
+    }
+    .nav-user { display: flex; align-items: center; gap: 10px; background: var(--gold-glow2); border: 1px solid var(--border); border-radius: 100px; padding: 6px 16px 6px 8px; }
+    .nav-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--bg); }
+    #nav-username { font-size: 0.78rem; color: var(--text-dim); }
+    .nav-sep { width: 1px; height: 18px; background: var(--border2); }
+    .btn-nav-ghost { background: none; border: 1px solid var(--border2); color: var(--text-muted); padding: 8px 18px; font-family: 'Outfit', sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 4px; cursor: pointer; transition: all 0.3s; }
+    .btn-nav-ghost:hover { border-color: var(--border); color: var(--text-dim); }
+
+    /* ── MAIN WRAP ── */
+    .dash-wrap { max-width: 1100px; margin: 0 auto; padding: 100px 48px 60px; }
+
+    /* ── WELCOME BAR ── */
+    .welcome-bar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
+    .welcome-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 300; color: var(--text); line-height: 1.1; }
+    .welcome-title em { font-style: italic; color: var(--gold); }
+    .welcome-sub { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; }
+    .welcome-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    /* Invite button */
+    .btn-invite {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      padding: 8px 18px; border-radius: 4px; cursor: pointer;
+      font-family: 'Outfit', sans-serif; font-size: 0.72rem;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim);
+      transition: all 0.3s; position: relative;
+    }
+    .btn-invite:hover { border-color: var(--border); color: var(--text); }
+    .invite-avatars { display: flex; gap: -4px; }
+    .invite-avatar-sm { width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); border: 1px solid var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; color: var(--bg); margin-left: -4px; overflow: hidden; }
+    .invite-avatar-sm:first-child { margin-left: 0; }
+    .invite-avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Invite dropdown */
+    .invite-dropdown {
+      position: absolute; right: 0; top: calc(100% + 8px);
+      width: 360px; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; z-index: 300;
+      display: none; box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .invite-dropdown.open { display: block; }
+    .invite-dropdown::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); border-radius: 14px 14px 0 0; }
+    .invite-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .invite-input { flex: 1; background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px; padding: 10px 14px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 0.82rem; transition: border-color 0.2s; }
+    .invite-input:focus { outline: none; border-color: var(--gold); }
+    .invite-input::placeholder { color: var(--text-muted); }
+    .btn-invite-send { background: linear-gradient(135deg, #C9A84C, #E8C97A); color: var(--bg); border: none; border-radius: 6px; padding: 10px 18px; font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .btn-invite-send:hover { box-shadow: 0 4px 16px rgba(201,168,76,0.3); }
+    #invite-message { font-size: 0.72rem; margin-bottom: 10px; display: none; }
+    #invite-message.ok  { color: var(--green); }
+    #invite-message.err { color: var(--red); }
+    .admins-list { display: flex; flex-direction: column; gap: 10px; }
+    .admin-row { display: flex; align-items: center; justify-content: space-between; }
+    .admin-row-left { display: flex; align-items: center; gap: 10px; }
+    .admin-row-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--bg); overflow: hidden; border: 1px solid var(--border2); flex-shrink: 0; }
+    .admin-row-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .admin-row-name { font-size: 0.82rem; color: var(--text); font-weight: 500; }
+    .admin-row-email { font-size: 0.7rem; color: var(--text-muted); }
+    .admin-row-badge { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.14em; color: var(--gold); }
+
+    /* ── CHART CARD ── */
+    .chart-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 18px; padding: 32px 36px 28px; position: relative; overflow: hidden; margin-bottom: 16px; }
+    .chart-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.5; }
+    .chart-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
+    .chart-balance-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+    #admin-total-asset { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 600; color: var(--gold); line-height: 1; }
+    .chart-balance-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
+    .chart-range-tabs { display: flex; background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px; padding: 3px; gap: 3px; }
+    .range-tab { padding: 7px 20px; border: none; background: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); cursor: pointer; transition: all 0.25s; }
+    .range-tab.active { background: var(--bg4); color: var(--gold); border: 1px solid var(--border); }
+    .chart-canvas-wrap { position: relative; height: 220px; width: 100%; }
+    #admin-chart { width: 100% !important; height: 100% !important; }
+    .chart-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 220px; color: var(--text-muted); font-size: 0.82rem; }
+    .chart-empty-icon { width: 48px; height: 48px; border: 1px dashed var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; opacity: 0.5; }
+
+    /* ── STATS ROW ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 22px 24px; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
+    .stat-card:hover { border-color: var(--border); transform: translateY(-2px); }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.3s; }
+    .stat-card:hover::before { opacity: 0.6; }
+    .stat-card-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; display: block; }
+    .stat-card-value { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 600; color: var(--gold); line-height: 1; display: block; }
+    .stat-card-value.green { color: var(--green); }
+    .stat-card-value.red   { color: var(--red); }
+    .stat-card-sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; display: block; }
+
+    /* ── XAUUSD CARD ── */
+    .xauusd-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 18px 20px; overflow: hidden; position: relative; margin-bottom: 16px; }
+    .xauusd-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.4; }
+    .xauusd-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .xauusd-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    .xauusd-pair { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
+    .tv-widget-wrap { height: 52px; overflow: hidden; }
+    .tv-widget-wrap iframe { margin-bottom: -22px; }
+
+    /* ── USER COUNT CARDS ── */
+    .user-count-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .user-count-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 24px 28px; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
+    .user-count-card:hover { border-color: var(--border); transform: translateY(-2px); }
+    .user-count-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.3s; }
+    .user-count-card:hover::before { opacity: 0.6; }
+    .user-count-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; display: block; }
+    .user-count-value { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 600; color: var(--text); line-height: 1; display: block; }
+
+    /* ── MT5 ACCOUNTS TABLE ── */
+    .accounts-section { margin-bottom: 48px; }
+    .accounts-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .accounts-title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 600; color: var(--text); }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.8rem; pointer-events: none; }
+    .search-input { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 9px 14px 9px 34px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 0.82rem; width: 220px; transition: border-color 0.2s; }
+    .search-input:focus { outline: none; border-color: var(--gold); }
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .accounts-table-wrap { overflow-x: auto; }
+    .accounts-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    .accounts-table thead th { padding: 10px 16px; text-align: left; font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border2); font-weight: 400; }
+    .accounts-table thead th:last-child { text-align: right; }
+    .accounts-table tbody tr { border-bottom: 1px solid var(--border2); transition: background 0.2s; }
+    .accounts-table tbody tr:last-child { border-bottom: none; }
+    .accounts-table tbody tr:hover { background: var(--bg4); }
+    .accounts-table tbody td { padding: 13px 16px; font-size: 0.8rem; font-family: 'DM Mono', monospace; color: var(--text-dim); }
+    .accounts-table tbody td:last-child { text-align: right; }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 100px; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+    .status-badge.connected { color: var(--green); background: rgba(46,204,138,0.08); border: 1px solid rgba(46,204,138,0.2); }
+    .status-badge.pending   { color: var(--gold);  background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2); }
+    .status-badge.rejected  { color: var(--red);   background: rgba(232,82,74,0.08);  border: 1px solid rgba(232,82,74,0.2); }
+    .status-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    .btn-update { background: none; border: 1px solid var(--border2); color: var(--text-muted); padding: 5px 14px; border-radius: 4px; font-family: 'Outfit', sans-serif; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .btn-update:hover { border-color: var(--border); color: var(--text); }
+
+    .accounts-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 60px 24px; text-align: center; background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; }
+    .accounts-empty-icon { width: 48px; height: 48px; border: 1px dashed var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; opacity: 0.5; }
+    .accounts-empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 400; color: var(--text-dim); }
+    .accounts-empty p { font-size: 0.8rem; color: var(--text-muted); max-width: 280px; line-height: 1.6; }
+    .accounts-no-results { display: none; text-align: center; padding: 32px; font-size: 0.82rem; color: var(--text-muted); }
+
+    /* ── STATUS MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 44px 40px; max-width: 420px; width: 92%; position: relative; transform: translateY(24px); transition: transform 0.35s; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+    .modal-close { position: absolute; top: 18px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
+    .modal-close:hover { color: var(--gold); }
+    .modal-eyebrow { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; font-weight: 400; color: var(--text); margin-bottom: 6px; }
+    .modal-user-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 28px; font-family: 'DM Mono', monospace; }
+    .modal-divider { height: 1px; background: var(--border2); margin: 20px 0; }
+    .status-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-status { width: 100%; padding: 13px; border-radius: 8px; font-family: 'Outfit', sans-serif; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; border: 1px solid; }
+    .btn-status.connected { color: var(--green); border-color: rgba(46,204,138,0.3); background: rgba(46,204,138,0.06); }
+    .btn-status.connected:hover { background: rgba(46,204,138,0.14); }
+    .btn-status.pending   { color: var(--gold);  border-color: rgba(201,168,76,0.3);  background: rgba(201,168,76,0.06); }
+    .btn-status.pending:hover   { background: rgba(201,168,76,0.14); }
+    .btn-status.rejected  { color: var(--red);   border-color: rgba(232,82,74,0.3);   background: rgba(232,82,74,0.06); }
+    .btn-status.rejected:hover  { background: rgba(232,82,74,0.14); }
+
+    /* ── LOGOUT MODAL ── */
+    .logout-modal-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .logout-modal-overlay.open { opacity: 1; pointer-events: all; }
+    .logout-modal { background: var(--bg3); border: 1px solid var(--border); border-radius: 16px; padding: 36px 40px; max-width: 380px; width: 92%; text-align: center; transform: translateY(20px); transition: transform 0.3s; }
+    .logout-modal-overlay.open .logout-modal { transform: translateY(0); }
+    .logout-modal p { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 28px; line-height: 1.6; }
+    .logout-modal-actions { display: flex; gap: 12px; justify-content: center; }
+    .btn-logout-cancel { padding: 11px 28px; border: 1px solid var(--border); background: none; color: var(--text-dim); border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .btn-logout-cancel:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-logout-confirm { padding: 11px 28px; background: var(--red); border: none; color: #fff; border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s; }
+    .btn-logout-confirm:hover { opacity: 0.85; }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 28px; right: 28px; z-index: 700; background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 16px 22px; max-width: 300px; transform: translateY(16px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-title { font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .toast-msg   { font-size: 0.74rem; color: var(--text-dim); }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border2); padding: 28px 48px; max-width: 1100px; margin: 40px auto 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .footer-copy { font-size: 0.72rem; color: var(--text-muted); }
+    .footer-back { font-size: 0.72rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .footer-back:hover { color: var(--gold); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .dash-wrap { padding: 88px 20px 40px; }
+      .chart-card { padding: 24px 20px 20px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .user-count-row { grid-template-columns: 1fr 1fr; }
+      footer { flex-direction: column; padding: 24px 20px; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .welcome-bar { flex-direction: column; align-items: flex-start; }
+      .user-count-row { grid-template-columns: 1fr; }
+      .invite-dropdown { width: 300px; }
+      .search-input { width: 160px; }
+    }
+  </style>
 </head>
-<body class="text-white antialiased min-h-screen p-4 md:p-8">
+<body>
 
-<div class="max-w-3xl mx-auto">
-
-    <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
-    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div class="mt-6 pt-3">
-            <p class="text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">admin dashboard</p>
-            <h1 id="admin-name" class="text-2xl font-bold tracking-tight">Welcome!</h1>
-            <p class="text-xs text-brandMuted">System-wide overview across all user accounts</p>
-        </div>
-
-        <div class="mb-5 pb-5 flex items-center gap-3 sm:gap-4 self-end sm:self-auto flex-wrap justify-end">
-            <button class="text-zinc-400 hover:text-white transition">
-                <img class="w-5" src="assets/brightness.svg" alt="">
-            </button>
-
-            <!-- Invite Button -->
-            <div class="relative inline-block text-left">
-                <button onclick="toggleInviteDropdown(event)" type="button"
-                        class="flex items-center gap-2 bg-cardBg/60 border border-white/5 py-1.5 px-3 rounded-full hover:bg-white/5 transition-colors cursor-pointer select-none">
-                    <div id="invite-btn-avatars" class="flex -space-x-1.5 pointer-events-none"></div>
-                    <span class="text-[12px] text-zinc-300 font-medium pointer-events-none">+ Invite</span>
-                </button>
-
-                <div id="invite-dropdown-menu"
-                     class="hidden absolute right-0 mt-2 w-[340px] sm:w-[420px] bg-[#121214] border border-white/5 rounded-2xl p-4 shadow-2xl z-50 origin-top-right">
-                    <div class="flex items-center gap-2 mb-4 w-full">
-                        <input type="email" id="invite-email-input" placeholder="Enter email address"
-                               class="flex-1 bg-[#1c1c1e] text-zinc-100 text-[13px] placeholder-zinc-600 border border-white/5 rounded-xl px-3.5 py-2 focus:outline-none focus:border-brandGold/30 transition-colors">
-                        <button type="button" onclick="sendInvite()"
-                                class="bg-[#e89b02] hover:bg-[#ffb005] text-black font-semibold text-[13px] px-5 py-2 rounded-xl transition cursor-pointer">
-                            Invite
-                        </button>
-                    </div>
-                    <p id="invite-message" class="text-[11px] mb-3 hidden"></p>
-                    <div id="admins-list" class="space-y-3">
-                        <p class="text-[11px] text-zinc-500">Loading admins...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Logout -->
-            <button onclick="document.getElementById('logout-modal').showModal()"
-                    class="text-[11px] font-medium text-brandRed/80 hover:text-brandRed flex items-center gap-1.5 transition cursor-pointer">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
-            </button>
-
-            <dialog id="logout-modal"
-                    class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-6 w-full max-w-[380px] shadow-2xl border border-white/5 open:flex flex-col items-center gap-6">
-                <p class="text-sm font-medium tracking-wide text-center text-zinc-200 px-2">You are about to log out, kindly confirm</p>
-                <div class="flex items-center justify-center gap-8 w-full px-4">
-                    <button onclick="document.getElementById('logout-modal').close()" type="button"
-                            class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">Back</button>
-                    <a href="https://my-project-gq9n.onrender.com/auth/logout"
-                       class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">Confirm</a>
-                </div>
-            </dialog>
-
-            <dialog id="status-modal"
-                    class="backdrop:bg-black/60 bg-[#121214] text-white rounded-2xl p-6 w-full max-w-[340px] shadow-2xl border border-white/5 open:flex flex-col gap-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold">Update Account Status</h3>
-                    <button onclick="document.getElementById('status-modal').close()" class="text-zinc-500 hover:text-white text-xs cursor-pointer">✕</button>
-                </div>
-                <p id="status-modal-user" class="text-xs text-zinc-400"></p>
-                <div class="flex flex-col gap-2">
-                    <button onclick="updateStatus('connected')" class="w-full bg-brandGreen/10 hover:bg-brandGreen/20 border border-brandGreen/30 text-brandGreen font-semibold text-xs py-2 rounded-full transition cursor-pointer">✓ Mark as Connected</button>
-                    <button onclick="updateStatus('pending')" class="w-full bg-brandGold/10 hover:bg-brandGold/20 border border-brandGold/30 text-brandGold font-semibold text-xs py-2 rounded-full transition cursor-pointer">⏳ Mark as Pending</button>
-                    <button onclick="updateStatus('rejected')" class="w-full bg-brandRed/10 hover:bg-brandRed/20 border border-brandRed/30 text-brandRed font-semibold text-xs py-2 rounded-full transition cursor-pointer">✕ Mark as Rejected</button>
-                </div>
-            </dialog>
-        </div>
-    </header>
-
-    <!-- ═══════════════════════════ MAIN CHART + SIDEBAR ═══════════════════════════ -->
-    <main class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-
-        <!-- Chart Card -->
-        <div class="md:col-span-3 bg-cardBg border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col justify-between min-h-[300px] md:min-h-[340px] relative overflow-hidden shadow-xl">
-            <div class="pt-3 absolute inset-0 radial-chart-glow z-0 pointer-events-none">
-                <img class="w-full h-full object-cover select-none" src="assets/chartcolorpng.png" alt="">
-            </div>
-
-            <div class="flex justify-between items-start relative z-40 w-full mb-2">
-                <div>
-                    <span class="text-xs font-medium text-white">Total Assets Managed</span>
-                    <div id="admin-total-asset" class="text-2xl md:text-3xl font-bold tracking-tight mt-1">--</div>
-                </div>
-                <!-- Range toggle -->
-                <div class="flex bg-white/5 border border-white/10 rounded-full p-0.5 gap-0.5">
-                    <button id="tab-7" onclick="setAdminChartRange(7)"
-                            class="range-tab active text-[10px] font-semibold px-3 py-1 rounded-full transition">7D</button>
-                    <button id="tab-30" onclick="setAdminChartRange(30)"
-                            class="range-tab text-[10px] font-semibold px-3 py-1 rounded-full transition">30D</button>
-                </div>
-            </div>
-
-            <!-- SVG chart -->
-            <div id="admin-chart-area" class="h-40 md:h-44 w-full relative chart-grid-mesh mt-2 z-10">
-                <svg id="admin-chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible"></svg>
-            </div>
-
-            <!-- Date labels -->
-            <div id="chart-labels" class="flex justify-between items-center text-[10px] font-bold text-zinc-400 px-1 relative z-20 mt-2"></div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="md:col-span-1 flex flex-row md:flex-col gap-3">
-            <!-- Total Profit -->
-            <div class="relative bg-cardBg border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col gap-4 md:gap-8 flex-1 md:h-[162px] shadow-lg overflow-hidden">
-                <div class="flex items-center gap-1.5">
-                    <img class="w-4" src="assets/profitcard.svg" alt="">
-                    <span class="text-xs font-medium">Total Profit</span>
-                </div>
-                <div>
-                    <div id="admin-total-profit" class="text-xl md:text-2xl font-bold tracking-tight text-brandGold">--</div>
-                    <span class="text-[10px] font-bold text-brandGreen mt-0.5 block">All users</span>
-                </div>
-                <div class="absolute right-0 bottom-0 opacity-60 pointer-events-none">
-                    <img class="w-[90px] md:w-[110px]" src="assets/totalprofit.png" alt="">
-                </div>
-            </div>
-
-            <!-- XAUUSD Live Price -->
-            <div class="bg-cardBg border border-white/5 rounded-2xl p-3 md:p-2 flex-1 md:h-[162px] shadow-lg">
-                <div class="flex items-center gap-2 md:px-2 md:pt-2 mb-2">
-                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brandGold/20 flex items-center justify-center border border-brandGold/30 shrink-0">
-                        <img src="assets/assercard.svg" alt="">
-                    </div>
-                    <span class="text-xs font-semibold tracking-wider text-zinc-300 font-mono">XAUUSD</span>
-                </div>
-                <div id="xauusd-price-display" class="md:px-2 text-xl md:text-3xl font-black tracking-tight pt-1 text-white">--</div>
-                <div id="xauusd-change" class="md:px-2 text-[10px] font-bold text-brandGreen mt-1">Live</div>
-            </div>
-        </div>
-    </main>
-
-    <!-- ═══════════════════════════ STATS ROW ═══════════════════════════ -->
-    <section class="grid grid-cols-3 gap-3 mb-4">
-        <!-- Total Trades -->
-        <div class="bg-cardBg border border-white/5 rounded-2xl flex flex-col justify-between p-3 md:p-4 h-28 md:h-32 shadow-md relative overflow-hidden">
-            <div class="flex items-center gap-1.5">
-                <img class="w-4 h-4" src="assets/totaltradescard.svg" alt="">
-                <span class="text-[10px] md:text-xs font-medium text-zinc-300">Total Trades</span>
-            </div>
-            <div id="admin-total-trades" class="text-2xl md:text-3xl font-bold tracking-tight self-end">--</div>
-            <div class="absolute left-0 bottom-0 opacity-50 pointer-events-none">
-                <img class="w-16 md:w-20 rounded-bl-2xl" src="assets/totaltrades.png" alt="">
-            </div>
-        </div>
-
-        <!-- Floating PnL -->
-        <div class="bg-cardBg border border-white/5 rounded-2xl flex flex-col justify-between p-3 md:p-4 h-28 md:h-32 shadow-md relative overflow-hidden">
-            <div class="flex items-center gap-1.5">
-                <img class="w-4" src="assets/floatingpnlcard.svg" alt="">
-                <span class="text-[10px] md:text-xs font-medium text-zinc-300">Floating PnL</span>
-            </div>
-            <div id="admin-floating-pnl" class="text-lg md:text-2xl font-bold tracking-tight text-brandGold self-end">--</div>
-            <div class="absolute left-0 bottom-0 opacity-50 pointer-events-none">
-                <img class="w-16 md:w-20" src="assets/floatingpnl.png" alt="">
-            </div>
-        </div>
-
-        <!-- Win Rate -->
-        <div class="bg-cardBg border border-white/5 rounded-2xl flex flex-col justify-between p-3 md:p-4 h-28 md:h-32 shadow-md relative overflow-hidden">
-            <div class="flex items-center gap-1.5">
-                <img class="w-4 h-4" src="assets/halftrophy.svg" alt="">
-                <span class="text-[10px] md:text-xs font-medium text-zinc-300">Win Rate</span>
-            </div>
-            <div id="admin-win-rate" class="text-2xl md:text-3xl font-bold tracking-tight self-end">--</div>
-            <div class="absolute left-0 bottom-0 opacity-50 pointer-events-none">
-                <img class="w-[70px] md:w-[90px]" src="assets/wintrophy.png" alt="">
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════════════════════ USER STATS ROW ═══════════════════════════ -->
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-        <!-- Total Users -->
-        <div class="bg-cardBg border border-white/5 rounded-2xl p-4 flex flex-col justify-between h-36 shadow-xl relative overflow-hidden">
-            <div class="flex items-center gap-2">
-                <img class="w-6" src="assets/users.svg" alt="">
-                <span class="text-xs font-medium text-zinc-300">Total Users</span>
-            </div>
-            <div id="total-users-count" class="text-4xl font-extrabold tracking-tight self-end mt-auto">--</div>
-        </div>
-
-        <!-- Active Subscriptions -->
-        <div class="bg-cardBg border border-white/5 rounded-2xl p-4 flex flex-col justify-between h-36 shadow-xl relative overflow-hidden">
-            <div class="flex items-center gap-2">
-                <img class="w-7" src="assets/activesubscription.svg" alt="">
-                <span class="text-xs font-medium text-zinc-300">Active Subscriptions</span>
-            </div>
-            <div id="active-subs-count" class="text-4xl font-extrabold tracking-tight self-end mt-auto">--</div>
-        </div>
-    </section>
-
-    <!-- ═══════════════════════════ MT5 ACCOUNTS ═══════════════════════════ -->
-    <section class="mb-12">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h2 class="text-xl font-bold tracking-tight">MT5 Accounts</h2>
-            <div class="relative w-full sm:w-64">
-                <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none opacity-40">
-                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
-                </span>
-                <input id="search-input" type="text" placeholder="Search by name or account"
-                       oninput="filterUsers()"
-                       class="w-full bg-[#141416] border border-white/5 rounded-full pl-9 pr-4 py-2 text-sm text-white placeholder-brandMuted focus:outline-none focus:border-brandGold transition">
-            </div>
-        </div>
-
-        <div id="users-empty-state" style="display:none"
-             class="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2">
-                <i data-lucide="clock" class="w-5 h-5 text-zinc-500"></i>
-            </div>
-            <p class="text-sm font-medium text-zinc-400">Waiting for accounts to connect</p>
-            <p class="text-xs text-zinc-600 max-w-xs">MT5 account submissions will appear here once users connect.</p>
-        </div>
-
-        <div id="users-table-container" class="overflow-x-auto" style="display:none">
-            <table class="w-full text-left border-collapse min-w-[560px]">
-                <thead>
-                    <tr class="border-b border-white/10 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-                        <th class="py-3 px-4">Account</th>
-                        <th class="py-3 px-4">Name</th>
-                        <th class="py-3 px-4">Server</th>
-                        <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4">Submitted</th>
-                        <th class="py-3 px-4 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="users-tbody" class="text-xs divide-y divide-white/5 font-medium text-zinc-100"></tbody>
-            </table>
-        </div>
-
-        <div id="no-results" style="display:none" class="text-center py-10">
-            <p class="text-xs text-zinc-500">No accounts match your search.</p>
-        </div>
-    </section>
-
-    <footer class="mt-16 text-center text-[10px] text-zinc-600 border-t border-white/5 py-6">
-        <p>© 2026 Bullion Algo System. All Rights Reserved.</p>
-    </footer>
+<!-- ═══ LOAD SCREEN ═══ -->
+<div id="load-screen">
+  <div class="load-logo" id="load-logo">
+    <img src="assets/logo-colored.svg" alt="Bullion Algo">
+    <div class="load-wordmark">Bullion <span>Algo</span></div>
+    <div class="load-bar"></div>
+  </div>
 </div>
 
-<!-- ═══════════════════════════ SCRIPTS ═══════════════════════════ -->
-<script>lucide.createIcons();</script>
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo-colored.svg" alt="" style="width:34px;height:34px;object-fit:contain;">
+    <span class="logo-text">Bullion <span>Algo</span> System</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-badge-admin">// Admin</span>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">—</div>
+      <span id="nav-username">Loading…</span>
+    </div>
+    <div class="nav-sep"></div>
+    <button class="btn-nav-ghost" onclick="openLogoutModal()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══ MAIN WRAP ═══ -->
+<div class="dash-wrap">
+
+  <!-- Welcome bar -->
+  <div class="welcome-bar">
+    <div>
+      <h1 class="welcome-title">Admin Overview, <em id="welcome-name">—</em></h1>
+      <p class="welcome-sub">// System-wide stats across all connected accounts</p>
+    </div>
+    <div class="welcome-actions">
+      <!-- Invite button with dropdown -->
+      <div style="position:relative;">
+        <button class="btn-invite" onclick="toggleInviteDropdown(event)">
+          <div class="invite-avatars" id="invite-btn-avatars"></div>
+          <span>+ Invite Admin</span>
+        </button>
+        <div class="invite-dropdown" id="invite-dropdown">
+          <div class="invite-row">
+            <input type="email" id="invite-email" class="invite-input" placeholder="Enter email address">
+            <button class="btn-invite-send" onclick="sendInvite()">Invite</button>
+          </div>
+          <p id="invite-message"></p>
+          <div class="admins-list" id="admins-list">
+            <p style="font-size:0.74rem; color:var(--text-muted);">Loading admins…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CHART CARD (full width) ── -->
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div>
+        <div class="chart-balance-label">// Total Assets Under Management</div>
+        <div id="admin-total-asset">—</div>
+        <span class="chart-balance-sub">Aggregated across all connected accounts</span>
+      </div>
+      <div class="chart-range-tabs">
+        <button id="tab-7"  class="range-tab active" onclick="setAdminChartRange(7)">7D</button>
+        <button id="tab-30" class="range-tab"        onclick="setAdminChartRange(30)">30D</button>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap" id="chart-data-view">
+      <canvas id="admin-chart"></canvas>
+    </div>
+    <div class="chart-empty" id="chart-empty-view">
+      <div class="chart-empty-icon">📈</div>
+      <span>No chart data available yet</span>
+    </div>
+  </div>
+
+  <!-- ── STATS ROW ── -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-card-label">// Total Profit</span>
+      <span class="stat-card-value" id="admin-total-profit">—</span>
+      <span class="stat-card-sub">All users combined</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card-label">// Floating PnL</span>
+      <span class="stat-card-value" id="admin-floating-pnl">—</span>
+      <span class="stat-card-sub">Open unrealised</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card-label">// Total Trades</span>
+      <span class="stat-card-value td-gold" id="admin-total-trades">—</span>
+      <span class="stat-card-sub">All closed trades</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card-label">// Win Rate</span>
+      <span class="stat-card-value green" id="admin-win-rate">—</span>
+      <span class="stat-card-sub">Profitable trades</span>
+    </div>
+  </div>
+
+  <!-- ── XAUUSD PRICE ── -->
+  <div class="xauusd-card">
+    <div class="xauusd-header">
+      <span class="xauusd-pip"></span>
+      <span class="xauusd-pair">XAUUSD · Live Price</span>
+    </div>
+    <div class="tv-widget-wrap">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+        {
+          "symbol": "OANDA:XAUUSD",
+          "width": "100%",
+          "locale": "en",
+          "colorTheme": "dark",
+          "isTransparent": true
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── USER COUNT CARDS ── -->
+  <div class="user-count-row">
+    <div class="user-count-card">
+      <span class="user-count-label">// Total Users</span>
+      <span class="user-count-value" id="total-users-count">—</span>
+    </div>
+    <div class="user-count-card">
+      <span class="user-count-label">// Active Subscriptions</span>
+      <span class="user-count-value" id="active-subs-count">—</span>
+    </div>
+  </div>
+
+  <!-- ── MT5 ACCOUNTS ── -->
+  <div class="accounts-section">
+    <div class="accounts-header">
+      <span class="accounts-title">MT5 Accounts</span>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search-input" class="search-input"
+               placeholder="Search name or account…" oninput="filterAccounts()">
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="accounts-empty" id="accounts-empty">
+      <div class="accounts-empty-icon">—</div>
+      <h3>No accounts yet</h3>
+      <p>MT5 account submissions will appear here once users connect their broker accounts.</p>
+    </div>
+
+    <!-- No results -->
+    <div class="accounts-no-results" id="accounts-no-results">No accounts match your search.</div>
+
+    <!-- Table -->
+    <div class="accounts-table-wrap" id="accounts-table-wrap" style="display:none;">
+      <table class="accounts-table">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Name</th>
+            <th>Server</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="accounts-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /dash-wrap -->
+
+<!-- ── FOOTER ── -->
+<footer>
+  <span class="footer-copy">© 2026 Bullion Algo Systems. All rights reserved.</span>
+  <a href="userdashboard.html" class="footer-back">← User Dashboard</a>
+</footer>
+
+<!-- ═══ STATUS MODAL ═══ -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeStatusModal()">✕</button>
+    <div class="modal-eyebrow">// Update Status</div>
+    <div class="modal-title">Account Status</div>
+    <div class="modal-user-label" id="status-modal-user">—</div>
+    <div class="modal-divider"></div>
+    <div class="status-actions">
+      <button class="btn-status connected" onclick="updateStatus('connected')">✦ Mark as Connected</button>
+      <button class="btn-status pending"   onclick="updateStatus('pending')">⏳ Mark as Pending</button>
+      <button class="btn-status rejected"  onclick="updateStatus('rejected')">✕ Mark as Rejected</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOGOUT MODAL ═══ -->
+<div class="logout-modal-overlay" id="logout-modal">
+  <div class="logout-modal">
+    <p>You are about to sign out of the admin panel. Confirm?</p>
+    <div class="logout-modal-actions">
+      <button class="btn-logout-cancel" onclick="closeLogoutModal()">Cancel</button>
+      <a href="https://my-project-gq9n.onrender.com/auth/logout" class="btn-logout-confirm">Sign Out</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toast-title"></div>
+  <div class="toast-msg"   id="toast-msg"></div>
+</div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+
+<!-- Load screen -->
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const logo   = document.getElementById('load-logo');
+    const screen = document.getElementById('load-screen');
+    setTimeout(() => logo.classList.add('visible'), 100);
+    setTimeout(() => {
+      screen.classList.add('fade');
+      setTimeout(() => screen.style.display = 'none', 500);
+    }, 1600);
+  });
+</script>
+
+<!-- Toast -->
+<script>
+  function showToast(title, msg) {
+    document.getElementById('toast-title').textContent = title;
+    document.getElementById('toast-msg').textContent   = msg;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4500);
+  }
+</script>
+
+<!-- Modal helpers -->
+<script>
+  function openLogoutModal()  { document.getElementById('logout-modal').classList.add('open'); }
+  function closeLogoutModal() { document.getElementById('logout-modal').classList.remove('open'); }
+  document.getElementById('logout-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('logout-modal')) closeLogoutModal();
+  });
+
+  let _selectedAccountId = null;
+  function openStatusModal(id, accountNumber, name) {
+    _selectedAccountId = id;
+    document.getElementById('status-modal-user').textContent = `${name} — #${accountNumber}`;
+    document.getElementById('status-modal').classList.add('open');
+  }
+  function closeStatusModal() { document.getElementById('status-modal').classList.remove('open'); }
+  document.getElementById('status-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('status-modal')) closeStatusModal();
+  });
+</script>
 
 <!-- Invite dropdown -->
 <script>
-    function toggleInviteDropdown(event) {
-        event.stopPropagation();
-        document.getElementById('invite-dropdown-menu').classList.toggle('hidden');
+  function toggleInviteDropdown(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('invite-dropdown');
+    const isOpen = dd.classList.toggle('open');
+    if (isOpen) loadAdmins();
+  }
+  document.addEventListener('click', e => {
+    const dd = document.getElementById('invite-dropdown');
+    if (dd && dd.classList.contains('open') && !dd.contains(e.target) && !e.target.closest('.btn-invite')) {
+      dd.classList.remove('open');
     }
-    document.addEventListener('click', (e) => {
-        const menu = document.getElementById('invite-dropdown-menu');
-        if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target)) {
-            menu.classList.add('hidden');
-        }
+  });
+
+  async function loadAdmins() {
+    try {
+      const res  = await fetch('https://my-project-gq9n.onrender.com/admin/admins', { credentials: 'include' });
+      const data = await res.json();
+      const list = document.getElementById('admins-list');
+
+      if (!data.admins || !data.admins.length) {
+        list.innerHTML = '<p style="font-size:0.74rem; color:var(--text-muted);">No admins found.</p>';
+        return;
+      }
+
+      list.innerHTML = data.admins.map(a => `
+        <div class="admin-row">
+          <div class="admin-row-left">
+            <div class="admin-row-avatar">
+              ${a.avatar ? `<img src="${a.avatar}" alt="${a.name}">` : a.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div class="admin-row-name">${a.name}</div>
+              <div class="admin-row-email">${a.email}</div>
+            </div>
+          </div>
+          <span class="admin-row-badge">Admin</span>
+        </div>
+      `).join('');
+
+      // Update avatar strip on button
+      const strip = document.getElementById('invite-btn-avatars');
+      if (strip) {
+        strip.innerHTML = data.admins.slice(0, 3).map(a =>
+          `<div class="invite-avatar-sm">${a.avatar ? `<img src="${a.avatar}" alt="${a.name}">` : a.name.charAt(0).toUpperCase()}</div>`
+        ).join('');
+      }
+    } catch (err) { console.error('Could not load admins:', err); }
+  }
+
+  async function sendInvite() {
+    const email   = document.getElementById('invite-email').value.trim();
+    const msgEl   = document.getElementById('invite-message');
+    msgEl.style.display = 'none';
+    if (!email) {
+      msgEl.textContent = 'Please enter an email address.';
+      msgEl.className = 'err'; msgEl.style.display = 'block'; return;
+    }
+    try {
+      const res  = await fetch('https://my-project-gq9n.onrender.com/admin/invite', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      msgEl.textContent = data.success ? data.message : data.error;
+      msgEl.className   = data.success ? 'ok' : 'err';
+      msgEl.style.display = 'block';
+      if (data.success) { document.getElementById('invite-email').value = ''; loadAdmins(); }
+    } catch (err) {
+      msgEl.textContent = 'Could not connect to server.';
+      msgEl.className = 'err'; msgEl.style.display = 'block';
+    }
+  }
+</script>
+
+<!-- Chart.js -->
+<script>
+  let _adminChartInstance = null;
+  let _adminDailyData     = [];
+  let _adminChartRange    = 7;
+
+  function setAdminChartRange(days) {
+    _adminChartRange = days;
+    document.getElementById('tab-7').classList.toggle('active',  days === 7);
+    document.getElementById('tab-30').classList.toggle('active', days === 30);
+    if (_adminDailyData.length) {
+      renderAdminChart(_adminDailyData.slice(-days));
+    }
+  }
+
+  function renderAdminChart(points) {
+    const canvas = document.getElementById('admin-chart');
+    if (!canvas || !points.length) return;
+    const ctx = canvas.getContext('2d');
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0,   'rgba(201,168,76,0.28)');
+    gradient.addColorStop(0.6, 'rgba(201,168,76,0.06)');
+    gradient.addColorStop(1,   'rgba(201,168,76,0)');
+
+    const labels   = points.map(p => {
+      const d = new Date(p.date);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     });
+    const balances = points.map(p => p.balance);
+
+    if (_adminChartInstance) _adminChartInstance.destroy();
+
+    _adminChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Total Balance',
+          data: balances,
+          borderColor: '#C9A84C',
+          borderWidth: 2,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#C9A84C',
+          pointBorderColor: '#080B10',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#E8C97A',
+          pointHoverBorderColor: '#080B10',
+          pointHoverBorderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#111620',
+            borderColor: 'rgba(201,168,76,0.25)',
+            borderWidth: 1,
+            titleColor: '#8A8275',
+            titleFont: { family: 'DM Mono', size: 11 },
+            bodyColor: '#C9A84C',
+            bodyFont: { family: 'DM Mono', size: 13, weight: '700' },
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+              title: items => items[0].label,
+              label: item  => ` $${Number(item.raw).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+            ticks: { color: '#4A4540', font: { family: 'DM Mono', size: 10 }, maxTicksLimit: 7, maxRotation: 0 },
+            border: { display: false }
+          },
+          y: {
+            position: 'right',
+            grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+            ticks: { color: '#4A4540', font: { family: 'DM Mono', size: 10 }, callback: v => '$' + Number(v).toLocaleString() },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
 </script>
 
-<!-- Admin auth check -->
+<!-- Accounts table -->
 <script>
-    async function checkAdmin() {
-        try {
-            const res = await fetch('https://my-project-gq9n.onrender.com/auth/me', { credentials: 'include' });
-            const data = await res.json();
-            if (!data.loggedIn) { window.location.href = 'https://bullionalgosystem.com/index.html'; return; }
-            if (data.user.role !== 'admin') { window.location.href = 'https://bullionalgosystem.com/userdashboard.html'; return; }
-            document.getElementById('admin-name').textContent = `Welcome ${data.user.name}!`;
-        } catch (err) {
-            window.location.href = 'https://bullionalgosystem.com/index.html';
-        }
+  let _allAccounts = [];
+
+  function renderAccounts(accounts) {
+    const tbody      = document.getElementById('accounts-tbody');
+    const tableWrap  = document.getElementById('accounts-table-wrap');
+    const emptyEl    = document.getElementById('accounts-empty');
+    const noResults  = document.getElementById('accounts-no-results');
+    noResults.style.display = 'none';
+
+    if (!accounts || !accounts.length) {
+      tableWrap.style.display = 'none';
+      emptyEl.style.display   = 'flex';
+      return;
     }
-    checkAdmin();
+    emptyEl.style.display   = 'none';
+    tableWrap.style.display = 'block';
+
+    tbody.innerHTML = accounts.map(acc => {
+      const date   = acc.created_at ? new Date(acc.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '—';
+      const status = acc.status || 'pending';
+      return `
+        <tr>
+          <td style="color:var(--gold); font-weight:500;">#${acc.account_number}</td>
+          <td style="color:var(--text);">${acc.users?.name || '—'}</td>
+          <td>${acc.server || '—'}</td>
+          <td>
+            <span class="status-badge ${status}">
+              <span class="status-badge-dot"></span>
+              ${status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+          </td>
+          <td>${date}</td>
+          <td>
+            <button class="btn-update"
+              onclick="openStatusModal('${acc.id}', '${acc.account_number}', '${(acc.users?.name || '').replace(/'/g, "\\'")}')">
+              Update
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function filterAccounts() {
+    const q         = document.getElementById('search-input').value.toLowerCase();
+    const noResults = document.getElementById('accounts-no-results');
+    if (!q) { renderAccounts(_allAccounts); return; }
+    const filtered  = _allAccounts.filter(a =>
+      a.account_number?.toLowerCase().includes(q) ||
+      a.users?.name?.toLowerCase().includes(q)
+    );
+    if (!filtered.length) {
+      document.getElementById('accounts-table-wrap').style.display = 'none';
+      document.getElementById('accounts-empty').style.display      = 'none';
+      noResults.style.display = 'block';
+    } else {
+      noResults.style.display = 'none';
+      renderAccounts(filtered);
+    }
+  }
+
+  async function updateStatus(status) {
+    if (!_selectedAccountId) return;
+    try {
+      const res  = await fetch(`https://my-project-gq9n.onrender.com/admin/mt5-accounts/${_selectedAccountId}`, {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeStatusModal();
+        showToast('Status Updated', `Account marked as ${status}.`);
+        loadAdminData();
+      } else {
+        showToast('Error', data.error || 'Could not update status.');
+      }
+    } catch (err) { showToast('Error', 'Could not connect to server.'); }
+  }
 </script>
 
-<!-- Invite logic -->
+<!-- Main admin loader -->
 <script>
-    async function loadAdmins() {
-        try {
-            const res = await fetch('https://my-project-gq9n.onrender.com/admin/admins', { credentials: 'include' });
-            const data = await res.json();
-            const list = document.getElementById('admins-list');
-            if (!data.admins || data.admins.length === 0) {
-                list.innerHTML = '<p class="text-[11px] text-zinc-500">No admins found.</p>'; return;
-            }
-            list.innerHTML = data.admins.map(admin => `
-                <div class="flex items-center justify-between gap-3 py-1">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-full overflow-hidden border border-white/10">
-                            ${admin.avatar
-                                ? `<img src="${admin.avatar}" class="w-full h-full object-cover" alt="${admin.name}">`
-                                : `<div class="w-full h-full bg-brandGold/20 flex items-center justify-center text-brandGold font-bold text-sm">${admin.name.charAt(0).toUpperCase()}</div>`}
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-[13px] font-semibold text-zinc-200 leading-snug">${admin.name}</span>
-                            <span class="text-[11px] text-zinc-500 -mt-0.5">${admin.email}</span>
-                        </div>
-                    </div>
-                    <span class="text-[11px] font-semibold text-brandGold">Admin</span>
-                </div>
-            `).join('');
-            const avatarContainer = document.getElementById('invite-btn-avatars');
-            if (avatarContainer) {
-                avatarContainer.innerHTML = data.admins.slice(0, 3).map(admin =>
-                    admin.avatar
-                        ? `<img class="w-5 h-5 rounded-full border border-dashBg object-cover" src="${admin.avatar}" alt="${admin.name}">`
-                        : `<div class="w-5 h-5 rounded-full border border-dashBg bg-brandGold/20 flex items-center justify-center text-brandGold font-bold text-[9px]">${admin.name.charAt(0).toUpperCase()}</div>`
-                ).join('');
-            }
-        } catch (err) { console.error('Could not load admins:', err); }
-    }
+  async function loadAdminData() {
+    try {
+      // ── Auth check ──
+      const authRes = await fetch('https://my-project-gq9n.onrender.com/auth/me', { credentials: 'include' });
+      const auth    = await authRes.json();
+      if (!auth.loggedIn) { window.location.href = 'https://bullionalgosystem.com/index.html'; return; }
+      if (auth.user.role !== 'admin') { window.location.href = 'https://bullionalgosystem.com/userdashboard.html'; return; }
 
-    async function sendInvite() {
-        const email = document.getElementById('invite-email-input').value;
-        const message = document.getElementById('invite-message');
-        if (!email) {
-            message.textContent = 'Please enter an email address.';
-            message.className = 'text-[11px] mb-3 text-brandRed';
-            message.classList.remove('hidden'); return;
-        }
-        try {
-            const res = await fetch('https://my-project-gq9n.onrender.com/admin/invite', {
-                method: 'POST', credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                message.textContent = data.message;
-                message.className = 'text-[11px] mb-3 text-brandGreen';
-                document.getElementById('invite-email-input').value = '';
-                loadAdmins();
-            } else {
-                message.textContent = data.error;
-                message.className = 'text-[11px] mb-3 text-brandRed';
-            }
-            message.classList.remove('hidden');
-        } catch (err) {
-            message.textContent = 'Could not connect to server.';
-            message.className = 'text-[11px] mb-3 text-brandRed';
-            message.classList.remove('hidden');
-        }
-    }
+      const user = auth.user;
+      const initials = (user.name || 'A').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      document.getElementById('nav-avatar').textContent   = initials;
+      document.getElementById('nav-username').textContent = user.name || 'Admin';
+      document.getElementById('welcome-name').textContent = (user.name || 'Admin').split(' ')[0];
 
-    const _origToggle = window.toggleInviteDropdown;
-    window.toggleInviteDropdown = function(event) {
-        _origToggle(event);
-        const menu = document.getElementById('invite-dropdown-menu');
-        if (!menu.classList.contains('hidden')) loadAdmins();
-    };
+      // ── Stats ──
+      const statsRes  = await fetch('https://my-project-gq9n.onrender.com/admin/stats', { credentials: 'include' });
+      const statsData = await statsRes.json();
+      document.getElementById('total-users-count').textContent = statsData.totalUsers        ?? '—';
+      document.getElementById('active-subs-count').textContent = statsData.activeSubscriptions ?? '—';
+
+      // ── MT5 Accounts ──
+      const accRes  = await fetch('https://my-project-gq9n.onrender.com/admin/mt5-accounts', { credentials: 'include' });
+      const accData = await accRes.json();
+      _allAccounts  = accData.accounts || [];
+      renderAccounts(_allAccounts);
+
+      // ── Live summary (chart + aggregated stats) ──
+      const liveRes  = await fetch('https://my-project-gq9n.onrender.com/admin/live-summary', { credentials: 'include' });
+      const liveData = await liveRes.json();
+
+      if (liveData.totalBalance != null) {
+        document.getElementById('admin-total-asset').textContent = `$${Number(liveData.totalBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+      if (liveData.totalProfit != null) {
+        const pEl = document.getElementById('admin-total-profit');
+        pEl.textContent = `${liveData.totalProfit >= 0 ? '+' : ''}$${Math.abs(liveData.totalProfit).toFixed(2)}`;
+        pEl.className   = `stat-card-value ${liveData.totalProfit >= 0 ? 'green' : 'red'}`;
+      }
+      if (liveData.floatingPnl != null) {
+        const fEl = document.getElementById('admin-floating-pnl');
+        fEl.textContent = liveData.floatingPnl !== 0
+          ? `${liveData.floatingPnl >= 0 ? '+' : ''}$${Math.abs(liveData.floatingPnl).toFixed(2)}`
+          : '—';
+        fEl.className = `stat-card-value ${liveData.floatingPnl >= 0 ? 'green' : 'red'}`;
+      }
+      if (liveData.totalTrades != null) {
+        document.getElementById('admin-total-trades').textContent = liveData.totalTrades;
+      }
+      if (liveData.winRate != null) {
+        document.getElementById('admin-win-rate').textContent = `${liveData.winRate}%`;
+      }
+
+      // ── Chart ──
+      if (liveData.dailyData && liveData.dailyData.length) {
+        _adminDailyData = liveData.dailyData;
+        document.getElementById('chart-data-view').style.display  = 'block';
+        document.getElementById('chart-empty-view').style.display = 'none';
+        renderAdminChart(_adminDailyData.slice(-_adminChartRange));
+      } else {
+        document.getElementById('chart-data-view').style.display  = 'none';
+        document.getElementById('chart-empty-view').style.display = 'flex';
+      }
+
+    } catch (err) {
+      console.error('Admin dashboard error:', err);
+      showToast('Error', 'Could not load admin data. Please refresh.');
+    }
+  }
+
+  loadAdminData();
 </script>
 
-<!-- Gold price -->
+<!-- Server wake ping -->
 <script>
-    async function fetchGoldPrice() {
-        try {
-            const res = await fetch('https://api.metals.live/v1/spot/gold');
-            const data = await res.json();
-            const price = data[0]?.price;
-            if (!price) throw new Error('No price');
-            document.getElementById('xauusd-price-display').textContent = `$${price.toFixed(2)}`;
-        } catch (err) {
-            document.getElementById('xauusd-price-display').textContent = '--';
-            document.getElementById('xauusd-change').textContent = '';
-        }
-    }
-    fetchGoldPrice();
-    setInterval(fetchGoldPrice, 30000);
-</script>
-
-<!-- Admin stats + MT5 accounts -->
-<script>
-    let allAccounts = [];
-    let selectedAccountId = null;
-
-    async function loadAdminData() {
-        try {
-            const statsRes = await fetch('https://my-project-gq9n.onrender.com/admin/stats', { credentials: 'include' });
-            const statsData = await statsRes.json();
-            document.getElementById('total-users-count').textContent = statsData.totalUsers ?? '--';
-            document.getElementById('active-subs-count').textContent = statsData.activeSubscriptions ?? '--';
-
-            const accountsRes = await fetch('https://my-project-gq9n.onrender.com/admin/mt5-accounts', { credentials: 'include' });
-            const accountsData = await accountsRes.json();
-            allAccounts = accountsData.accounts || [];
-            renderUsers(allAccounts);
-        } catch (err) { console.error('Could not load admin data:', err); }
-    }
-
-    function renderUsers(accounts) {
-        const tbody = document.getElementById('users-tbody');
-        const tableContainer = document.getElementById('users-table-container');
-        const emptyState = document.getElementById('users-empty-state');
-        const noResults = document.getElementById('no-results');
-        noResults.style.display = 'none';
-        if (!accounts || accounts.length === 0) {
-            tableContainer.style.display = 'none';
-            emptyState.style.display = 'flex'; return;
-        }
-        emptyState.style.display = 'none';
-        tableContainer.style.display = 'block';
-        tbody.innerHTML = accounts.map(acc => {
-            const statusColor = acc.status === 'connected' ? 'text-brandGreen' : acc.status === 'pending' ? 'text-brandGold' : 'text-brandRed';
-            const date = acc.created_at ? new Date(acc.created_at).toLocaleDateString() : '--';
-            return `
-                <tr class="hover:bg-white/[0.02] transition">
-                    <td class="py-3 px-4 text-zinc-200 font-mono">#${acc.account_number}</td>
-                    <td class="py-3 px-4">${acc.users?.name || '--'}</td>
-                    <td class="py-3 px-4 text-zinc-400">${acc.server}</td>
-                    <td class="py-3 px-4 ${statusColor} font-semibold capitalize">${acc.status}</td>
-                    <td class="py-3 px-4 text-zinc-400 font-mono">${date}</td>
-                    <td class="py-3 px-4 text-right">
-                        <button onclick="openStatusModal('${acc.id}', '${acc.account_number}', '${acc.users?.name || ''}')"
-                                class="text-[11px] font-semibold text-zinc-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1 rounded-full transition cursor-pointer">
-                            Update
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function filterUsers() {
-        const query = document.getElementById('search-input').value.toLowerCase();
-        const noResults = document.getElementById('no-results');
-        if (!query) { renderUsers(allAccounts); return; }
-        const filtered = allAccounts.filter(acc =>
-            acc.account_number?.toLowerCase().includes(query) ||
-            acc.users?.name?.toLowerCase().includes(query)
-        );
-        if (filtered.length === 0) {
-            document.getElementById('users-table-container').style.display = 'none';
-            document.getElementById('users-empty-state').style.display = 'none';
-            noResults.style.display = 'block';
-        } else {
-            noResults.style.display = 'none';
-            renderUsers(filtered);
-        }
-    }
-
-    function openStatusModal(id, accountNumber, name) {
-        selectedAccountId = id;
-        document.getElementById('status-modal-user').textContent = `${name} — #${accountNumber}`;
-        document.getElementById('status-modal').showModal();
-    }
-
-    async function updateStatus(status) {
-        if (!selectedAccountId) return;
-        try {
-            const res = await fetch(`https://my-project-gq9n.onrender.com/admin/mt5-accounts/${selectedAccountId}`, {
-                method: 'PATCH', credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            });
-            const data = await res.json();
-            if (data.success) { document.getElementById('status-modal').close(); loadAdminData(); }
-            else { alert(data.error || 'Could not update status.'); }
-        } catch (err) { alert('Could not connect to server.'); }
-    }
-
-    loadAdminData();
-</script>
-
-<!-- Admin live summary chart -->
-<script>
-    let _adminDailyData = [];
-    let _adminChartRange = 7;
-
-    function setAdminChartRange(days) {
-        _adminChartRange = days;
-        document.getElementById('tab-7').classList.toggle('active', days === 7);
-        document.getElementById('tab-30').classList.toggle('active', days === 30);
-        if (_adminDailyData.length) {
-            const sliced = days === 7 ? _adminDailyData.slice(-7) : _adminDailyData.slice(-30);
-            renderAdminChart(sliced);
-        }
-    }
-
-    function renderAdminChart(points) {
-        const svg = document.getElementById('admin-chart-svg');
-        const labels = document.getElementById('chart-labels');
-        if (!svg || !points.length) return;
-
-        const W = svg.parentElement.clientWidth || 500;
-        const H = svg.parentElement.clientHeight || 160;
-        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
-        const balances = points.map(p => p.balance);
-        const minB = Math.min(...balances) * 0.995;
-        const maxB = Math.max(...balances) * 1.005;
-        const range = maxB - minB || 1;
-
-        const toX = i => (i / Math.max(points.length - 1, 1)) * W;
-        const toY = b => H - ((b - minB) / range) * (H * 0.85);
-
-        const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.balance).toFixed(1)}`).join(' ');
-        const fillD = `${pathD} L${toX(points.length - 1)},${H} L0,${H} Z`;
-
-        const lastX = toX(points.length - 1).toFixed(1);
-        const lastY = toY(points[points.length - 1].balance).toFixed(1);
-        const lastVal = points[points.length - 1].balance;
-        const tooltipW = 100;
-        const tooltipX = Math.min(parseFloat(lastX) - tooltipW / 2, W - tooltipW - 4);
-
-        svg.innerHTML = `
-            <defs>
-                <linearGradient id="adminChartFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#EAA83A" stop-opacity="0.2"/>
-                    <stop offset="100%" stop-color="#EAA83A" stop-opacity="0"/>
-                </linearGradient>
-            </defs>
-            <path d="${fillD}" fill="url(#adminChartFill)"/>
-            <path d="${pathD}" fill="none" stroke="#EAA83A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-            <circle cx="${lastX}" cy="${lastY}" r="4" fill="#EAA83A"/>
-            <rect x="${tooltipX}" y="${parseFloat(lastY) - 24}" width="${tooltipW}" height="18" rx="5" fill="#25C06D" opacity="0.92"/>
-            <text x="${parseFloat(tooltipX) + tooltipW / 2}" y="${parseFloat(lastY) - 11}" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="monospace">$${lastVal.toLocaleString()}</text>
-        `;
-
-        const step = Math.max(1, Math.ceil(points.length / 6));
-        labels.innerHTML = points
-            .filter((_, i) => i % step === 0 || i === points.length - 1)
-            .map(p => {
-                const d = new Date(p.date);
-                return `<span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>`;
-            }).join('');
-    }
-
-    async function loadAdminChart() {
-        try {
-            const res = await fetch('https://my-project-gq9n.onrender.com/admin/live-summary', { credentials: 'include' });
-            const data = await res.json();
-
-            // Update stat cards
-            if (data.totalBalance != null) {
-                document.getElementById('admin-total-asset').textContent = `$${data.totalBalance.toLocaleString()}`;
-            }
-            if (data.totalProfit != null) {
-                document.getElementById('admin-total-profit').textContent = `$${data.totalProfit.toLocaleString()}`;
-            }
-            if (data.totalTrades != null) {
-                document.getElementById('admin-total-trades').textContent = data.totalTrades;
-            }
-            if (data.floatingPnl != null) {
-                const fpEl = document.getElementById('admin-floating-pnl');
-                if (data.floatingPnl !== 0) {
-                    fpEl.textContent = `${data.floatingPnl >= 0 ? '+' : ''}$${data.floatingPnl.toFixed(2)}`;
-                    fpEl.className = `text-lg md:text-2xl font-bold tracking-tight self-end ${data.floatingPnl >= 0 ? 'text-brandGold' : 'text-brandRed'}`;
-                } else {
-                    fpEl.textContent = '--';
-                }
-            }
-            if (data.winRate != null) {
-                document.getElementById('admin-win-rate').textContent = `${data.winRate}%`;
-            }
-
-            // Chart
-            if (data.dailyData && data.dailyData.length) {
-                _adminDailyData = data.dailyData;
-                const sliced = _adminDailyData.slice(-_adminChartRange);
-                renderAdminChart(sliced);
-            }
-        } catch (err) {
-            console.error('Admin chart error:', err);
-        }
-    }
-
-    loadAdminChart();
+  fetch('https://my-project-gq9n.onrender.com/api/ping').catch(() => {});
 </script>
 
 </body>
