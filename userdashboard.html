@@ -306,13 +306,19 @@
       font-family: 'DM Mono', monospace; font-size: 0.62rem;
       letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase;
     }
-    /* TradingView widget container */
-    .tv-widget-wrap {
-      height: 52px; overflow: hidden; position: relative;
-    }
-    /* hide TradingView branding bar */
-    .tv-widget-wrap iframe { margin-bottom: -22px; }
-
+    .xauusd-price-display {
+  display: flex; align-items: baseline; gap: 10px;
+}
+#xauusd-price-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem; font-weight: 600; color: var(--gold); line-height: 1;
+}
+.xauusd-price-change {
+  font-family: 'DM Mono', monospace; font-size: 0.7rem;
+  font-weight: 500;
+}
+.xauusd-price-change.up   { color: var(--green); }
+.xauusd-price-change.down { color: var(--red); }
     /* ── TWO-COLUMN LOWER SECTION ── */
     .lower-grid {
       display: grid; grid-template-columns: 1fr 1fr;
@@ -549,7 +555,7 @@
 <div id="load-screen">
   <div class="load-logo" id="load-logo">
     <img src="assets/logo-colored.svg" alt="Bullion Algo">
-    <div class="load-wordmark">Bullion <span>Algo</span></div>
+    <div class="load-wordmark">Bullion <span>Algo</span> System </span></div>
     <div class="load-bar"></div>
   </div>
 </div>
@@ -659,20 +665,10 @@
         <span class="xauusd-pair">XAUUSD · Live Price</span>
       </div>
       <!-- TradingView Single Ticker Widget -->
-      <div class="tv-widget-wrap">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-          {
-            "symbol": "OANDA:XAUUSD",
-            "width": "100%",
-            "locale": "en",
-            "colorTheme": "dark",
-            "isTransparent": true
-          }
-          </script>
-        </div>
-      </div>
+      <div class="xauusd-price-display">
+  <span id="xauusd-price-value">—</span>
+  <span class="xauusd-price-change" id="xauusd-price-change"></span>
+</div>
     </div>
 
     <!-- ── OPEN POSITIONS + TRADE HISTORY (2 col) ── -->
@@ -1281,10 +1277,39 @@
   }
 </script>
 
-<!-- Server wake ping -->
+<!-- XAUUSD live price -->
 <script>
-  fetch('https://my-project-gq9n.onrender.com/api/ping').catch(() => {});
+  let _lastGoldPrice = null;
+
+  async function fetchGoldPrice() {
+    try {
+      const res  = await fetch('https://api.gold-api.com/price/XAU');
+      const data = await res.json();
+      const price = data.price;
+
+      const priceEl  = document.getElementById('xauusd-price-value');
+      const changeEl = document.getElementById('xauusd-price-change');
+
+      priceEl.textContent = `$${price.toFixed(2)}`;
+
+      if (_lastGoldPrice !== null) {
+        const diff = price - _lastGoldPrice;
+        if (Math.abs(diff) > 0.001) {
+          changeEl.textContent = `${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(2)}`;
+          changeEl.className   = `xauusd-price-change ${diff >= 0 ? 'up' : 'down'}`;
+        }
+      }
+      _lastGoldPrice = price;
+
+    } catch (err) {
+      document.getElementById('xauusd-price-value').textContent = '—';
+    }
+  }
+
+  fetchGoldPrice();
+  setInterval(fetchGoldPrice, 30000);
 </script>
+
 
 </body>
 </html>

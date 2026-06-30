@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* ── DESIGN TOKENS ── */
     :root {
       --gold:        #C9A84C;
       --gold-light:  #E8C97A;
@@ -29,19 +28,14 @@
       --green:       #2ECC8A;
       --red:         #E8524A;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-
-    /* Film grain */
     body::before {
       content: ''; position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
       pointer-events: none; z-index: 9999; opacity: 0.35;
     }
-
-    /* ── LOAD SCREEN ── */
     #load-screen { position: fixed; inset: 0; z-index: 1000; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
     #load-screen.fade { opacity: 0; pointer-events: none; }
     .load-logo { display: flex; flex-direction: column; align-items: center; gap: 20px; opacity: 0; transform: translateY(8px); transition: opacity 0.6s ease, transform 0.6s ease; }
@@ -52,65 +46,31 @@
     .load-bar { width: 120px; height: 1px; background: var(--border2); position: relative; overflow: hidden; }
     .load-bar::after { content: ''; position: absolute; left: -50%; top: 0; bottom: 0; width: 50%; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: loadSlide 1.2s ease infinite; }
     @keyframes loadSlide { from { left: -50%; } to { left: 150%; } }
-
-    /* ── NAV ── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 48px;
-      background: linear-gradient(to bottom, rgba(8,11,16,0.98), transparent);
-      backdrop-filter: blur(4px);
-      border-bottom: 1px solid var(--border2);
-    }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; display: flex; align-items: center; justify-content: space-between; padding: 18px 48px; background: linear-gradient(to bottom, rgba(8,11,16,0.98), transparent); backdrop-filter: blur(4px); border-bottom: 1px solid var(--border2); }
     .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
     .logo-text { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; letter-spacing: 0.05em; color: var(--text); }
     .logo-text span { color: var(--gold); }
     .nav-right { display: flex; align-items: center; gap: 16px; }
-    .nav-badge-admin {
-      font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em;
-      text-transform: uppercase; color: var(--gold);
-      border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px;
-      background: var(--gold-glow2);
-    }
+    .nav-badge-admin { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; background: var(--gold-glow2); }
     .nav-user { display: flex; align-items: center; gap: 10px; background: var(--gold-glow2); border: 1px solid var(--border); border-radius: 100px; padding: 6px 16px 6px 8px; }
     .nav-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--bg); }
     #nav-username { font-size: 0.78rem; color: var(--text-dim); }
     .nav-sep { width: 1px; height: 18px; background: var(--border2); }
     .btn-nav-ghost { background: none; border: 1px solid var(--border2); color: var(--text-muted); padding: 8px 18px; font-family: 'Outfit', sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 4px; cursor: pointer; transition: all 0.3s; }
     .btn-nav-ghost:hover { border-color: var(--border); color: var(--text-dim); }
-
-    /* ── MAIN WRAP ── */
     .dash-wrap { max-width: 1100px; margin: 0 auto; padding: 100px 48px 60px; }
-
-    /* ── WELCOME BAR ── */
     .welcome-bar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
     .welcome-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 300; color: var(--text); line-height: 1.1; }
     .welcome-title em { font-style: italic; color: var(--gold); }
     .welcome-sub { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; }
     .welcome-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-    /* Invite button */
-    .btn-invite {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--bg3); border: 1px solid var(--border2);
-      padding: 8px 18px; border-radius: 4px; cursor: pointer;
-      font-family: 'Outfit', sans-serif; font-size: 0.72rem;
-      letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim);
-      transition: all 0.3s; position: relative;
-    }
+    .btn-invite { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border2); padding: 8px 18px; border-radius: 4px; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); transition: all 0.3s; position: relative; }
     .btn-invite:hover { border-color: var(--border); color: var(--text); }
-    .invite-avatars { display: flex; gap: -4px; }
+    .invite-avatars { display: flex; }
     .invite-avatar-sm { width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); border: 1px solid var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; color: var(--bg); margin-left: -4px; overflow: hidden; }
     .invite-avatar-sm:first-child { margin-left: 0; }
     .invite-avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
-
-    /* Invite dropdown */
-    .invite-dropdown {
-      position: absolute; right: 0; top: calc(100% + 8px);
-      width: 360px; background: var(--bg3); border: 1px solid var(--border);
-      border-radius: 14px; padding: 20px; z-index: 300;
-      display: none; box-shadow: 0 24px 60px rgba(0,0,0,0.5);
-    }
+    .invite-dropdown { position: absolute; right: 0; top: calc(100% + 8px); width: 360px; background: var(--bg3); border: 1px solid var(--border); border-radius: 14px; padding: 20px; z-index: 300; display: none; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
     .invite-dropdown.open { display: block; }
     .invite-dropdown::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); border-radius: 14px 14px 0 0; }
     .invite-row { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -130,8 +90,6 @@
     .admin-row-name { font-size: 0.82rem; color: var(--text); font-weight: 500; }
     .admin-row-email { font-size: 0.7rem; color: var(--text-muted); }
     .admin-row-badge { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.14em; color: var(--gold); }
-
-    /* ── CHART CARD ── */
     .chart-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 18px; padding: 32px 36px 28px; position: relative; overflow: hidden; margin-bottom: 16px; }
     .chart-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.5; }
     .chart-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
@@ -145,8 +103,6 @@
     #admin-chart { width: 100% !important; height: 100% !important; }
     .chart-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 220px; color: var(--text-muted); font-size: 0.82rem; }
     .chart-empty-icon { width: 48px; height: 48px; border: 1px dashed var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; opacity: 0.5; }
-
-    /* ── STATS ROW ── */
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
     .stat-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 22px 24px; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
     .stat-card:hover { border-color: var(--border); transform: translateY(-2px); }
@@ -157,18 +113,17 @@
     .stat-card-value.green { color: var(--green); }
     .stat-card-value.red   { color: var(--red); }
     .stat-card-sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; display: block; }
-
-    /* ── XAUUSD CARD ── */
     .xauusd-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 18px 20px; overflow: hidden; position: relative; margin-bottom: 16px; }
     .xauusd-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.4; }
     .xauusd-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .xauusd-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s ease infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
     .xauusd-pair { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
-    .tv-widget-wrap { height: 52px; overflow: hidden; }
-    .tv-widget-wrap iframe { margin-bottom: -22px; }
-
-    /* ── USER COUNT CARDS ── */
+    .xauusd-price-display { display: flex; align-items: baseline; gap: 10px; }
+    #xauusd-price-value { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 600; color: var(--gold); line-height: 1; }
+    .xauusd-price-change { font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500; }
+    .xauusd-price-change.up   { color: var(--green); }
+    .xauusd-price-change.down { color: var(--red); }
     .user-count-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .user-count-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 24px 28px; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
     .user-count-card:hover { border-color: var(--border); transform: translateY(-2px); }
@@ -176,8 +131,6 @@
     .user-count-card:hover::before { opacity: 0.6; }
     .user-count-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; display: block; }
     .user-count-value { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 600; color: var(--text); line-height: 1; display: block; }
-
-    /* ── MT5 ACCOUNTS TABLE ── */
     .accounts-section { margin-bottom: 48px; }
     .accounts-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
     .accounts-title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 600; color: var(--text); }
@@ -186,7 +139,6 @@
     .search-input { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 9px 14px 9px 34px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 0.82rem; width: 220px; transition: border-color 0.2s; }
     .search-input:focus { outline: none; border-color: var(--gold); }
     .search-input::placeholder { color: var(--text-muted); }
-
     .accounts-table-wrap { overflow-x: auto; }
     .accounts-table { width: 100%; border-collapse: collapse; min-width: 560px; }
     .accounts-table thead th { padding: 10px 16px; text-align: left; font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border2); font-weight: 400; }
@@ -196,23 +148,18 @@
     .accounts-table tbody tr:hover { background: var(--bg4); }
     .accounts-table tbody td { padding: 13px 16px; font-size: 0.8rem; font-family: 'DM Mono', monospace; color: var(--text-dim); }
     .accounts-table tbody td:last-child { text-align: right; }
-
     .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 100px; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
     .status-badge.connected { color: var(--green); background: rgba(46,204,138,0.08); border: 1px solid rgba(46,204,138,0.2); }
     .status-badge.pending   { color: var(--gold);  background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2); }
     .status-badge.rejected  { color: var(--red);   background: rgba(232,82,74,0.08);  border: 1px solid rgba(232,82,74,0.2); }
     .status-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-
     .btn-update { background: none; border: 1px solid var(--border2); color: var(--text-muted); padding: 5px 14px; border-radius: 4px; font-family: 'Outfit', sans-serif; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
     .btn-update:hover { border-color: var(--border); color: var(--text); }
-
     .accounts-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 60px 24px; text-align: center; background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; }
     .accounts-empty-icon { width: 48px; height: 48px; border: 1px dashed var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; opacity: 0.5; }
     .accounts-empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 400; color: var(--text-dim); }
     .accounts-empty p { font-size: 0.8rem; color: var(--text-muted); max-width: 280px; line-height: 1.6; }
     .accounts-no-results { display: none; text-align: center; padding: 32px; font-size: 0.82rem; color: var(--text-muted); }
-
-    /* ── STATUS MODAL ── */
     .modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
     .modal { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 44px 40px; max-width: 420px; width: 92%; position: relative; transform: translateY(24px); transition: transform 0.35s; }
@@ -232,8 +179,6 @@
     .btn-status.pending:hover   { background: rgba(201,168,76,0.14); }
     .btn-status.rejected  { color: var(--red);   border-color: rgba(232,82,74,0.3);   background: rgba(232,82,74,0.06); }
     .btn-status.rejected:hover  { background: rgba(232,82,74,0.14); }
-
-    /* ── LOGOUT MODAL ── */
     .logout-modal-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .logout-modal-overlay.open { opacity: 1; pointer-events: all; }
     .logout-modal { background: var(--bg3); border: 1px solid var(--border); border-radius: 16px; padding: 36px 40px; max-width: 380px; width: 92%; text-align: center; transform: translateY(20px); transition: transform 0.3s; }
@@ -244,20 +189,14 @@
     .btn-logout-cancel:hover { border-color: var(--gold); color: var(--gold); }
     .btn-logout-confirm { padding: 11px 28px; background: var(--red); border: none; color: #fff; border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s; }
     .btn-logout-confirm:hover { opacity: 0.85; }
-
-    /* ── TOAST ── */
     .toast { position: fixed; bottom: 28px; right: 28px; z-index: 700; background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 16px 22px; max-width: 300px; transform: translateY(16px); opacity: 0; transition: all 0.3s; pointer-events: none; }
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast-title { font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
     .toast-msg   { font-size: 0.74rem; color: var(--text-dim); }
-
-    /* ── FOOTER ── */
     footer { border-top: 1px solid var(--border2); padding: 28px 48px; max-width: 1100px; margin: 40px auto 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .footer-copy { font-size: 0.72rem; color: var(--text-muted); }
     .footer-back { font-size: 0.72rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
     .footer-back:hover { color: var(--gold); }
-
-    /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
       nav { padding: 16px 24px; }
       .dash-wrap { padding: 88px 20px 40px; }
@@ -277,84 +216,57 @@
 </head>
 <body>
 
-<!-- ═══ LOAD SCREEN ═══ -->
 <div id="load-screen">
   <div class="load-logo" id="load-logo">
     <img src="assets/logo-colored.svg" alt="Bullion Algo">
-    <div class="load-wordmark">Bullion <span>Algo</span></div>
+    <div class="load-wordmark">Bullion <span>Algo</span> System</div>
     <div class="load-bar"></div>
   </div>
 </div>
 
-            <!-- Logout -->
-            <button onclick="document.getElementById('logout-modal').showModal()"
-                    class="text-[11px] font-medium text-brandRed/80 hover:text-brandRed flex items-center gap-1.5 transition cursor-pointer">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
-            </button>
+<nav>
+  <a class="nav-logo" href="https://bullionalgosystem.com">
+    <img src="assets/logo-colored.svg" alt="Bullion Algo System Logo" style="width:34px;height:34px;object-fit:contain;">
+    <span class="logo-text">Bullion <span>Algo</span> System</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-badge-admin">// Admin</span>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">—</div>
+      <span id="nav-username">Loading…</span>
+    </div>
+    <div class="nav-sep"></div>
+    <button class="btn-nav-ghost" onclick="openLogoutModal()">Sign Out</button>
+  </div>
+</nav>
 
-            <dialog id="logout-modal"
-                    class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-6 w-full max-w-[380px] shadow-2xl border border-white/5 open:flex flex-col items-center gap-6">
-                <p class="text-sm font-medium tracking-wide text-center text-zinc-200 px-2">You are about to log out, kindly confirm</p>
-                <div class="flex items-center justify-center gap-8 w-full px-4">
-                    <button onclick="document.getElementById('logout-modal').close()" type="button"
-                            class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">Back</button>
-                    <a href="https://my-project-gq9n.onrender.com/auth/logout"
-                       class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">Confirm</a>
-                </div>
-            </dialog>
+<div class="dash-wrap">
 
-            <dialog id="status-modal"
-                    class="backdrop:bg-black/60 bg-[#121214] text-white rounded-2xl p-6 w-full max-w-[340px] shadow-2xl border border-white/5 open:flex flex-col gap-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold">Update Account Status</h3>
-                    <button onclick="document.getElementById('status-modal').close()" class="text-zinc-500 hover:text-white text-xs cursor-pointer">✕</button>
-                </div>
-                <p id="status-modal-user" class="text-xs text-zinc-400"></p>
-                <div class="flex flex-col gap-2">
-                    <button onclick="updateStatus('connected')" class="w-full bg-brandGreen/10 hover:bg-brandGreen/20 border border-brandGreen/30 text-brandGreen font-semibold text-xs py-2 rounded-full transition cursor-pointer">✓ Mark as Connected</button>
-                    <button onclick="updateStatus('pending')" class="w-full bg-brandGold/10 hover:bg-brandGold/20 border border-brandGold/30 text-brandGold font-semibold text-xs py-2 rounded-full transition cursor-pointer">⏳ Mark as Pending</button>
-                    <button onclick="updateStatus('rejected')" class="w-full bg-brandRed/10 hover:bg-brandRed/20 border border-brandRed/30 text-brandRed font-semibold text-xs py-2 rounded-full transition cursor-pointer">✕ Mark as Rejected</button>
-                </div>
-            </dialog>
-        </div>
-    </header>
-
-    <!-- ═══════════════════════════ MAIN CHART + SIDEBAR ═══════════════════════════ -->
-    <main class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-
-        <!-- Chart Card -->
-        <div class="md:col-span-3 bg-cardBg border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col justify-between min-h-[300px] md:min-h-[340px] relative overflow-hidden shadow-xl">
-            <div class="pt-3 absolute inset-0 radial-chart-glow z-0 pointer-events-none">
-                <img class="w-full h-full object-cover select-none" src="assets/chartcolorpng.png" alt="">
-            </div>
-
-            <div class="flex justify-between items-start relative z-40 w-full mb-2">
-                <div>
-                    <span class="text-xs font-medium text-white">Total Assets Managed</span>
-                    <div id="admin-total-asset" class="text-2xl md:text-3xl font-bold tracking-tight mt-1">--</div>
-                </div>
-                <!-- Range toggle -->
-                <div class="flex bg-white/5 border border-white/10 rounded-full p-0.5 gap-0.5">
-                    <button id="tab-7" onclick="setAdminChartRange(7)"
-                            class="range-tab active text-[10px] font-semibold px-3 py-1 rounded-full transition">7D</button>
-                    <button id="tab-30" onclick="setAdminChartRange(30)"
-                            class="range-tab text-[10px] font-semibold px-3 py-1 rounded-full transition">30D</button>
-                </div>
-            </div>
-
-            <!-- SVG chart -->
-            <div id="admin-chart-area" class="h-40 md:h-44 w-full relative chart-grid-mesh mt-2 z-10">
-                <svg id="admin-chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible"></svg>
-            </div>
-
-            <!-- Date labels -->
-            <div id="chart-labels" class="flex justify-between items-center text-[10px] font-bold text-zinc-400 px-1 relative z-20 mt-2"></div>
+  <div class="welcome-bar">
+    <div>
+      <h1 class="welcome-title">Admin Overview, <em id="welcome-name">—</em></h1>
+      <p class="welcome-sub">// System-wide stats across all connected accounts</p>
+    </div>
+    <div class="welcome-actions">
+      <div style="position:relative;">
+        <button class="btn-invite" onclick="toggleInviteDropdown(event)">
+          <div class="invite-avatars" id="invite-btn-avatars"></div>
+          <span>+ Invite Admin</span>
+        </button>
+        <div class="invite-dropdown" id="invite-dropdown">
+          <div class="invite-row">
+            <input type="email" id="invite-email" class="invite-input" placeholder="Enter email address">
+            <button class="btn-invite-send" onclick="sendInvite()">Invite</button>
+          </div>
+          <p id="invite-message"></p>
+          <div class="admins-list" id="admins-list">
+            <p style="font-size:0.74rem; color:var(--text-muted);">Loading admins…</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── CHART CARD (full width) ── -->
   <div class="chart-card">
     <div class="chart-card-header">
       <div>
@@ -376,7 +288,6 @@
     </div>
   </div>
 
-  <!-- ── STATS ROW ── -->
   <div class="stats-row">
     <div class="stat-card">
       <span class="stat-card-label">// Total Profit</span>
@@ -400,29 +311,17 @@
     </div>
   </div>
 
-  <!-- ── XAUUSD PRICE ── -->
   <div class="xauusd-card">
     <div class="xauusd-header">
       <span class="xauusd-pip"></span>
       <span class="xauusd-pair">XAUUSD · Live Price</span>
     </div>
-    <div class="tv-widget-wrap">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-        {
-          "symbol": "OANDA:XAUUSD",
-          "width": "100%",
-          "locale": "en",
-          "colorTheme": "dark",
-          "isTransparent": true
-        }
-        </script>
-      </div>
+    <div class="xauusd-price-display">
+      <span id="xauusd-price-value">—</span>
+      <span class="xauusd-price-change" id="xauusd-price-change"></span>
     </div>
   </div>
 
-  <!-- ── USER COUNT CARDS ── -->
   <div class="user-count-row">
     <div class="user-count-card">
       <span class="user-count-label">// Total Users</span>
@@ -434,7 +333,6 @@
     </div>
   </div>
 
-  <!-- ── MT5 ACCOUNTS ── -->
   <div class="accounts-section">
     <div class="accounts-header">
       <span class="accounts-title">MT5 Accounts</span>
@@ -445,17 +343,14 @@
       </div>
     </div>
 
-    <!-- Empty state -->
     <div class="accounts-empty" id="accounts-empty">
       <div class="accounts-empty-icon">—</div>
       <h3>No accounts yet</h3>
       <p>MT5 account submissions will appear here once users connect their broker accounts.</p>
     </div>
 
-    <!-- No results -->
     <div class="accounts-no-results" id="accounts-no-results">No accounts match your search.</div>
 
-    <!-- Table -->
     <div class="accounts-table-wrap" id="accounts-table-wrap" style="display:none;">
       <table class="accounts-table">
         <thead>
@@ -473,15 +368,13 @@
     </div>
   </div>
 
-</div><!-- /dash-wrap -->
+</div>
 
-<!-- ── FOOTER ── -->
 <footer>
-  <span class="footer-copy">© 2026 Bullion Algo Systems. All rights reserved.</span>
+  <span class="footer-copy">© 2026 Bullion Algo System. All rights reserved.</span>
   <a href="userdashboard.html" class="footer-back">← User Dashboard</a>
 </footer>
 
-<!-- ═══ STATUS MODAL ═══ -->
 <div class="modal-overlay" id="status-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeStatusModal()">✕</button>
@@ -497,7 +390,6 @@
   </div>
 </div>
 
-<!-- ═══ LOGOUT MODAL ═══ -->
 <div class="logout-modal-overlay" id="logout-modal">
   <div class="logout-modal">
     <p>You are about to sign out of the admin panel. Confirm?</p>
@@ -508,15 +400,11 @@
   </div>
 </div>
 
-<!-- ═══ TOAST ═══ -->
 <div class="toast" id="toast">
   <div class="toast-title" id="toast-title"></div>
   <div class="toast-msg"   id="toast-msg"></div>
 </div>
 
-<!-- ═══════════════ SCRIPTS ═══════════════ -->
-
-<!-- Load screen -->
 <script>
   window.addEventListener('DOMContentLoaded', () => {
     const logo   = document.getElementById('load-logo');
@@ -529,7 +417,6 @@
   });
 </script>
 
-<!-- Toast -->
 <script>
   function showToast(title, msg) {
     document.getElementById('toast-title').textContent = title;
@@ -540,7 +427,6 @@
   }
 </script>
 
-<!-- Modal helpers -->
 <script>
   function openLogoutModal()  { document.getElementById('logout-modal').classList.add('open'); }
   function closeLogoutModal() { document.getElementById('logout-modal').classList.remove('open'); }
@@ -560,7 +446,6 @@
   });
 </script>
 
-<!-- Invite dropdown -->
 <script>
   function toggleInviteDropdown(e) {
     e.stopPropagation();
@@ -601,7 +486,6 @@
         </div>
       `).join('');
 
-      // Update avatar strip on button
       const strip = document.getElementById('invite-btn-avatars');
       if (strip) {
         strip.innerHTML = data.admins.slice(0, 3).map(a =>
@@ -637,7 +521,6 @@
   }
 </script>
 
-<!-- Chart.js -->
 <script>
   let _adminChartInstance = null;
   let _adminDailyData     = [];
@@ -733,7 +616,6 @@
   }
 </script>
 
-<!-- Accounts table -->
 <script>
   let _allAccounts = [];
 
@@ -816,11 +698,9 @@
   }
 </script>
 
-<!-- Main admin loader -->
 <script>
   async function loadAdminData() {
     try {
-      // ── Auth check ──
       const authRes = await fetch('https://my-project-gq9n.onrender.com/auth/me', { credentials: 'include' });
       const auth    = await authRes.json();
       if (!auth.loggedIn) { window.location.href = 'https://bullionalgosystem.com/index.html'; return; }
@@ -832,19 +712,16 @@
       document.getElementById('nav-username').textContent = user.name || 'Admin';
       document.getElementById('welcome-name').textContent = (user.name || 'Admin').split(' ')[0];
 
-      // ── Stats ──
       const statsRes  = await fetch('https://my-project-gq9n.onrender.com/admin/stats', { credentials: 'include' });
       const statsData = await statsRes.json();
       document.getElementById('total-users-count').textContent = statsData.totalUsers        ?? '—';
       document.getElementById('active-subs-count').textContent = statsData.activeSubscriptions ?? '—';
 
-      // ── MT5 Accounts ──
       const accRes  = await fetch('https://my-project-gq9n.onrender.com/admin/mt5-accounts', { credentials: 'include' });
       const accData = await accRes.json();
       _allAccounts  = accData.accounts || [];
       renderAccounts(_allAccounts);
 
-      // ── Live summary (chart + aggregated stats) ──
       const liveRes  = await fetch('https://my-project-gq9n.onrender.com/admin/live-summary', { credentials: 'include' });
       const liveData = await liveRes.json();
 
@@ -870,7 +747,6 @@
         document.getElementById('admin-win-rate').textContent = `${liveData.winRate}%`;
       }
 
-      // ── Chart ──
       if (liveData.dailyData && liveData.dailyData.length) {
         _adminDailyData = liveData.dailyData;
         document.getElementById('chart-data-view').style.display  = 'block';
@@ -890,9 +766,36 @@
   loadAdminData();
 </script>
 
-<!-- Server wake ping -->
 <script>
-  fetch('https://my-project-gq9n.onrender.com/api/ping').catch(() => {});
+  let _lastGoldPrice = null;
+
+  async function fetchGoldPrice() {
+    try {
+      const res  = await fetch('https://api.gold-api.com/price/XAU');
+      const data = await res.json();
+      const price = data.price;
+
+      const priceEl  = document.getElementById('xauusd-price-value');
+      const changeEl = document.getElementById('xauusd-price-change');
+
+      priceEl.textContent = `$${price.toFixed(2)}`;
+
+      if (_lastGoldPrice !== null) {
+        const diff = price - _lastGoldPrice;
+        if (Math.abs(diff) > 0.001) {
+          changeEl.textContent = `${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(2)}`;
+          changeEl.className   = `xauusd-price-change ${diff >= 0 ? 'up' : 'down'}`;
+        }
+      }
+      _lastGoldPrice = price;
+
+    } catch (err) {
+      document.getElementById('xauusd-price-value').textContent = '—';
+    }
+  }
+
+  fetchGoldPrice();
+  setInterval(fetchGoldPrice, 30000);
 </script>
 
 </body>
