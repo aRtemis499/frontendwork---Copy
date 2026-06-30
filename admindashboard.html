@@ -286,48 +286,69 @@
   </div>
 </div>
 
-<!-- ═══ NAV ═══ -->
-<nav>
-  <a class="nav-logo" href="index.html">
-    <img src="assets/logo-colored.svg" alt="" style="width:34px;height:34px;object-fit:contain;">
-    <span class="logo-text">Bullion <span>Algo</span> System</span>
-  </a>
-  <div class="nav-right">
-    <span class="nav-badge-admin">// Admin</span>
-    <div class="nav-user">
-      <div class="nav-avatar" id="nav-avatar">—</div>
-      <span id="nav-username">Loading…</span>
-    </div>
-    <div class="nav-sep"></div>
-    <button class="btn-nav-ghost" onclick="openLogoutModal()">Sign Out</button>
-  </div>
-</nav>
+            <!-- Logout -->
+            <button onclick="document.getElementById('logout-modal').showModal()"
+                    class="text-[11px] font-medium text-brandRed/80 hover:text-brandRed flex items-center gap-1.5 transition cursor-pointer">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+            </button>
 
-<!-- ═══ MAIN WRAP ═══ -->
-<div class="dash-wrap">
+            <dialog id="logout-modal"
+                    class="backdrop:bg-black/60 bg-[#2c3036] text-white rounded-xl p-6 w-full max-w-[380px] shadow-2xl border border-white/5 open:flex flex-col items-center gap-6">
+                <p class="text-sm font-medium tracking-wide text-center text-zinc-200 px-2">You are about to log out, kindly confirm</p>
+                <div class="flex items-center justify-center gap-8 w-full px-4">
+                    <button onclick="document.getElementById('logout-modal').close()" type="button"
+                            class="flex-1 max-w-[110px] bg-[#dc2626] hover:bg-red-700 text-white font-medium text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">Back</button>
+                    <a href="https://my-project-gq9n.onrender.com/auth/logout"
+                       class="flex-1 max-w-[110px] bg-[#EAA83A] hover:bg-amber-500 text-black font-semibold text-xs py-2 rounded-full transition shadow-md text-center cursor-pointer">Confirm</a>
+                </div>
+            </dialog>
 
-  <!-- Welcome bar -->
-  <div class="welcome-bar">
-    <div>
-      <h1 class="welcome-title">Admin Overview, <em id="welcome-name">—</em></h1>
-      <p class="welcome-sub">// System-wide stats across all connected accounts</p>
-    </div>
-    <div class="welcome-actions">
-      <!-- Invite button with dropdown -->
-      <div style="position:relative;">
-        <button class="btn-invite" onclick="toggleInviteDropdown(event)">
-          <div class="invite-avatars" id="invite-btn-avatars"></div>
-          <span>+ Invite Admin</span>
-        </button>
-        <div class="invite-dropdown" id="invite-dropdown">
-          <div class="invite-row">
-            <input type="email" id="invite-email" class="invite-input" placeholder="Enter email address">
-            <button class="btn-invite-send" onclick="sendInvite()">Invite</button>
-          </div>
-          <p id="invite-message"></p>
-          <div class="admins-list" id="admins-list">
-            <p style="font-size:0.74rem; color:var(--text-muted);">Loading admins…</p>
-          </div>
+            <dialog id="status-modal"
+                    class="backdrop:bg-black/60 bg-[#121214] text-white rounded-2xl p-6 w-full max-w-[340px] shadow-2xl border border-white/5 open:flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold">Update Account Status</h3>
+                    <button onclick="document.getElementById('status-modal').close()" class="text-zinc-500 hover:text-white text-xs cursor-pointer">✕</button>
+                </div>
+                <p id="status-modal-user" class="text-xs text-zinc-400"></p>
+                <div class="flex flex-col gap-2">
+                    <button onclick="updateStatus('connected')" class="w-full bg-brandGreen/10 hover:bg-brandGreen/20 border border-brandGreen/30 text-brandGreen font-semibold text-xs py-2 rounded-full transition cursor-pointer">✓ Mark as Connected</button>
+                    <button onclick="updateStatus('pending')" class="w-full bg-brandGold/10 hover:bg-brandGold/20 border border-brandGold/30 text-brandGold font-semibold text-xs py-2 rounded-full transition cursor-pointer">⏳ Mark as Pending</button>
+                    <button onclick="updateStatus('rejected')" class="w-full bg-brandRed/10 hover:bg-brandRed/20 border border-brandRed/30 text-brandRed font-semibold text-xs py-2 rounded-full transition cursor-pointer">✕ Mark as Rejected</button>
+                </div>
+            </dialog>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════ MAIN CHART + SIDEBAR ═══════════════════════════ -->
+    <main class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+
+        <!-- Chart Card -->
+        <div class="md:col-span-3 bg-cardBg border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col justify-between min-h-[300px] md:min-h-[340px] relative overflow-hidden shadow-xl">
+            <div class="pt-3 absolute inset-0 radial-chart-glow z-0 pointer-events-none">
+                <img class="w-full h-full object-cover select-none" src="assets/chartcolorpng.png" alt="">
+            </div>
+
+            <div class="flex justify-between items-start relative z-40 w-full mb-2">
+                <div>
+                    <span class="text-xs font-medium text-white">Total Assets Managed</span>
+                    <div id="admin-total-asset" class="text-2xl md:text-3xl font-bold tracking-tight mt-1">--</div>
+                </div>
+                <!-- Range toggle -->
+                <div class="flex bg-white/5 border border-white/10 rounded-full p-0.5 gap-0.5">
+                    <button id="tab-7" onclick="setAdminChartRange(7)"
+                            class="range-tab active text-[10px] font-semibold px-3 py-1 rounded-full transition">7D</button>
+                    <button id="tab-30" onclick="setAdminChartRange(30)"
+                            class="range-tab text-[10px] font-semibold px-3 py-1 rounded-full transition">30D</button>
+                </div>
+            </div>
+
+            <!-- SVG chart -->
+            <div id="admin-chart-area" class="h-40 md:h-44 w-full relative chart-grid-mesh mt-2 z-10">
+                <svg id="admin-chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible"></svg>
+            </div>
+
+            <!-- Date labels -->
+            <div id="chart-labels" class="flex justify-between items-center text-[10px] font-bold text-zinc-400 px-1 relative z-20 mt-2"></div>
         </div>
       </div>
     </div>
